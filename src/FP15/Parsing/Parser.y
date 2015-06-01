@@ -1,0 +1,124 @@
+{
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE Trustworthy #-}
+
+module FP15.Parsing.Parser (parse) where
+import qualified Data.Map.Strict as M
+import Control.Monad.Error
+import Data.Map.Strict(Map)
+import FP15.Parsing.Types
+import FP15.Parsing.Lexer
+import FP15.Types
+import FP15.Value
+}
+
+%name parser
+%tokentype { Token }
+%error { parseError }
+%monad { Either String }
+
+%token
+eof { Token EOF _ _ }
+"{" { Token LBrace _ _ }
+"}" { Token RBrace _ _ }
+"[" { Token LBracket _ _ }
+"]" { Token RBracket _ _ }
+"(" { Token LParen _ _ }
+")" { Token RParen _ _ }
+"|" { Token Pipe _ _ }
+":" { Token Colon _ _ }
+"," { Token Comma _ _ }
+";" { Token Semicolon _ _ }
+"=" { Token (Operator (N [] "=")) _ _ }
+
+function { (viewFunction -> Just $$) }
+functional { (viewFunctional -> Just $$) }
+operator { (viewOperator -> Just $$) }
+dotOperator { (viewDotOperator -> Just $$) }
+
+false { Token FalseLiteral _ _ }
+true { Token TrueLiteral _ _ }
+char { Token (CharLiteral $$) _ _ }
+int { Token (IntLiteral $$) _ _ }
+real { Token (RealLiteral $$) _ _ }
+symbol { Token (SymbolLiteral $$) _ _ }
+string { Token (StringLiteral $$) _ _ }
+indexer { Token (Indexer $$) _ _ }
+
+%%
+
+prog : binding_list eof { ModuleAST (M.fromList $1) M.empty M.empty M.empty [] [] }
+
+binding_list : binding { [$1] }
+             | binding_list ";" binding { $1 ++ [$3] }
+
+binding : function "=" expr { (locNameToId $1, $3) }
+
+expr : nonif_expr { $1 }
+     | nonif_expr ":" nonif_expr "|" expr { TIf $1 $3 $5 }
+
+nonif_expr : primary_or_op_seq { primList $1 }
+
+primary_op : primary { $1 }
+           | operator { TOperator $1 }
+           | dotOperator { TDotOperator $1 }
+
+primary_or_op_seq : primary_op { [$1] }
+                  | primary_or_op_seq primary_op { $1 ++ [$2] }
+
+-- Unary and binary operator rules not present
+
+expr_list : expr_list "," expr { $1 ++ [$3] }
+          | expr { [$1] }
+
+primary : function { TFunc $1 }
+        | literal { $1 }
+        | indexer { TIndex $1 }
+        | "{" ":" "[" binding_list "]" expr "}" { TLet $4 $6 }
+        | "(" primary_or_op_seq ")" { TUnresolvedInfixNotation $2 }
+        | "(" functional primary_or_op_seq ")" { TApp $2 $3 }
+        | "[" expr_list "]" { TFork $2 }
+        | "{" expr "}" { $2 }
+
+literal : false  { TValue $ Bool False }
+        | true  { TValue $ Bool True }
+        | char { TValue $ Char $1 }
+        | int  { TValue $ Int $1 }
+        | real  { TValue $ Real $1 }
+        | symbol  { TValue $ Symbol $1 }
+        | string { TValue $ String $1 }
+
+{
+-- | The 'parse' function parses an FP15 source code and returns the
+-- parsed module body and imports declared.
+parse :: ModuleSource -> Either String ModuleAST
+
+parse (ModuleSource f s) = scanTokensWithFile f s >>= parser
+
+parseError :: [Token] -> Either String a
+parseError ts = throwError $ "Parse error with tokens " ++ (show $ take 2 ts) ++ "."
+
+primList [x] = x
+primList xs = TUnresolvedPrimaryList xs
+
+viewFunction :: Token -> Maybe (LocName F)
+viewFunctional :: Token -> Maybe (LocName Fl)
+viewOperator :: Token -> Maybe (LocName Unknown)
+
+viewFunction (Token (Function n) p _) = Just (Loc (Just p) n)
+viewFunction _ = Nothing
+
+viewFunctional (Token (Functional n) p _) = Just (Loc (Just p) n)
+viewFunctional _ = Nothing
+
+viewOperator (Token (Operator n) p _) = Just (Loc (Just p) n)
+viewOperator _ = Nothing
+
+viewDotOperator (Token (DotOperator n) p _) = Just (Loc (Just p) n)
+viewDotOperator _ = Nothing
+
+-- TODO error reporting for things like Module.abc = def
+locNameToId :: LocName F -> LocId F
+locNameToId (Loc l (N _ n)) = Loc l (Id n)
+
+}

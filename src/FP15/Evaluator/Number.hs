@@ -3,8 +3,13 @@ import Prelude hiding (div)
 import Data.Char(ord)
 import FP15.Evaluator.Types
 
+-- | 'zeroN' is number for zero as integer. Note that to check if a number is
+-- zero, 'isZero' should be used instead, because there can be zeroes in other
+-- numeric types.
 zeroN :: Number
 zeroN = IntN 0
+
+-- * Type Conversion
 
 -- | The 'getTower' function determines the position of a value in the numerical
 -- tower
@@ -34,9 +39,11 @@ raiseTower a@(RealN _) CharT = a
 raiseTower a@(RealN _) IntT = a
 raiseTower a@(RealN _) RealT = a
 
-numericBinOp' :: (Integer -> Integer -> Number)
-                 -> (Float -> Float -> Number)
-                 -> Number -> Number -> Number
+-- * Operator Creation
+
+numericBinOp' :: (Integer -> Integer -> a)
+                 -> (Float -> Float -> a)
+                 -> Number -> Number -> a
 
 numericBinOp :: (Integer -> Integer -> Integer)
                 -> (Float -> Float -> Float)
@@ -65,6 +72,8 @@ numericBinOp' f g a b = let numPairC = Args2C NumberC NumberC in
 numericUnOp f g = numericUnOp' (IntN . f) (RealN . g)
 numericBinOp f g = numericBinOp' (ub IntN f) (ub RealN g) where ub = (.) (.) (.)
 
+-- * Operations
+
 isZero :: Number -> Bool
 isZero (CharN '\0') = True
 isZero (IntN 0) = True
@@ -77,4 +86,9 @@ mul = numericBinOp (*) (*)
 div = numericBinOp quot (/)
 sgn = numericUnOp signum signum
 absolute = numericUnOp abs abs
+
+greaterThan = numericBinOp' (>) (>)
+lessThan = numericBinOp' (<) (<)
+greaterEq = numericBinOp' (>=) (>=)
+lessEq = numericBinOp' (<=) (<=)
 

@@ -10,27 +10,43 @@ import FP15.Evaluator.Error
 import FP15.Evaluator.Contract
 import FP15.Evaluator.Number
 
+-- | The 'ensure' function validates a value against a contract, and returns the
+-- matched value, or else, raise a 'ContractViolation' error.
 ensure :: Contract a -> Value -> ResultOf a
+-- | The 'ensureFunc' function attaches contracts on the input and output of the
+-- 'Func', and the return type will be converted to 'ResultOf' the type the
+-- output contract matches.
+ensureFunc :: Contract a -> Contract b -> (a -> Result) -> Value -> ResultOf b
+-- | The 'ensureIn' function attaches a contract on the input of the 'Func', and
+-- if the contract validates, the matched value will be applied on the function
+-- given.
+ensureIn :: Contract a -> (a -> Result) -> Value -> Result
+-- | The 'ensureOut' function attaches a contract on the output of the 'Func',
+-- and if the output validates the output contract, the matched value will be
+-- returned.
+ensureOut :: Contract b -> (Value -> Result) -> Value -> ResultOf b
+-- | The 'predOnly' function attaches a 'BoolC' contract on the output of the
+-- 'Func', making sure the function only returns booleans.
+predOnly :: Func -> Value -> ResultOf Bool
+
 ensure c v =
   case validate c v of
     Nothing -> raiseContractViolation c v
     Just x -> return x
 
--- | Attach contracts on the input and output of a function.
-ensureFunc :: Contract a -> Contract b -> (a -> Result) -> Value -> ResultOf b
-ensureL :: Contract a -> (a -> Result) -> Value -> ResultOf Value
-ensureR :: Contract b -> (Value -> Result) -> Value -> ResultOf b
-predOnly :: Func -> Value -> ResultOf Bool
-
 func' :: ValueConvertible b => Contract a -> (a -> b) -> Func
 func :: (ContractConvertible a, ValueConvertible b) => (a -> b) -> Func
+func2 :: (ContractConvertible a, ContractConvertible b,
+          ValueConvertible c) => (a -> b -> c) -> Func
+
 func' c f x = liftM (toValue . f) (ensure c x)
 func = func' asContract
+func2 = func . uncurry
 
 ensureFunc a b f x = ensure a x >>= f >>= ensure b
-ensureL = (`ensureFunc` AnyC)
-ensureR = (AnyC `ensureFunc`)
-predOnly = ensureR BoolC
+ensureIn = (`ensureFunc` AnyC)
+ensureOut = (AnyC `ensureFunc`)
+predOnly = ensureOut BoolC
 
 numListF :: ([Number] -> Number) -> Func
 foldN :: (Number -> Number -> Number) -> Number -> Func
@@ -45,49 +61,60 @@ distr (xs, a) = map (\x -> List [x, a]) xs
 
 subLike f (Cons (a, b)) = foldl f a b
 
+-- | The 'checkFunc' function creates a 'Func' that returns true if and only if
+-- the input value passes the contract provided.
 checkFunc :: Contract a -> Func
+-- | The 'eqFunc' function creates a 'Func' that returns True if and only if the
+-- input values equals the value provided.
 eqFunc :: Value -> Func
 
 checkFunc c = return . Bool . isJust . validate c
-
 eqFunc x = return . Bool . (==) x
 
 standardEnv =
   M.fromList [
-    ("i", return)
+    ("_", return)
 
   , ("succ", func (`add` IntN 1))
   , ("pred", func (`sub` IntN 1))
-  , ("even?", func (even :: Integer -> Bool))
-  , ("odd?", func (odd :: Integer -> Bool))
+  , ("isEven", func (even :: Integer -> Bool))
+  , ("isOdd", func (odd :: Integer -> Bool))
 
-  , ("+", foldN add (IntN 0))
-  , ("-", func $ subLike sub)
-  , ("*", foldN mul (IntN 1))
-  , ("-", func $ subLike div)
+  , ("add", foldN add (IntN 0))
+  , ("sub", func $ subLike sub)
+  , ("mul", foldN mul (IntN 1))
+  , ("div", func $ subLike div)
   , ("sgn", func sgn)
   , ("abs", func absolute)
+
+  , (">", func2 greaterThan)
+  , ("<", func2 lessThan)
+  , (">=", func2 greaterEq)
+  , (">=", func2 lessEq)
 
   , ("distl", func distl)
   , ("distr", func distl)
   , ("cons", func cons)
   , ("uncons", func uncons)
 
-  , ("zero?", func isZero)
-  , ("true?", eqFunc $ Bool True)
-  , ("false?", eqFunc $ Bool False)
+  , ("equal", func2 ((==) :: Value -> Value -> Bool))
+  , ("notEqual", func2 ((/=) :: Value -> Value -> Bool))
 
-  , ("bool?", checkFunc BoolC)
+  , ("is0", func isZero)
+  , ("isT", eqFunc $ Bool True)
+  , ("isF", eqFunc $ Bool False)
 
-  , ("char?", checkFunc CharC)
-  , ("int?", checkFunc IntC)
-  , ("real?", checkFunc RealC)
-  , ("number?", checkFunc NumberC)
+  , ("isBool", checkFunc BoolC)
 
-  , ("symbol?", checkFunc SymbolC)
-  , ("string?", checkFunc StringC)
+  , ("isChar", checkFunc CharC)
+  , ("isInt", checkFunc IntC)
+  , ("isReal", checkFunc RealC)
+  , ("isNum", checkFunc NumberC)
 
-  , ("list?", checkFunc listAnyC)
-  , ("empty?", checkFunc EmptyC)
-  , ("cons?", checkFunc $ ConsC AnyC listAnyC)
+  , ("isSymbol", checkFunc SymbolC)
+  , ("isString", checkFunc StringC)
+
+  , ("isList", checkFunc listAnyC)
+  , ("isEmpty", checkFunc EmptyC)
+  , ("isCons", checkFunc $ ConsC AnyC listAnyC)
   ] :: M.Map String Func

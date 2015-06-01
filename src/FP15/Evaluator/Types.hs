@@ -7,6 +7,11 @@ import Data.Maybe(fromMaybe)
 import Data.These(These(..))
 import FP15.Value
 
+-- * Error and Diagnostics
+
+-- | Position on the source code by filename (or 'None' if unknown or not
+-- applicable), starting location @(line, col)@ and ending location
+-- @(line, col)@.
 data SourceLocation = SourceLocation { sourceFile :: Maybe String
                                      , sourceFromLineCol :: (Int, Int)
                                      , sourceToLineCol :: (Int, Int) }
@@ -82,6 +87,8 @@ instance ValueConvertible Number where
   toValue (IntN i) = Int i
   toValue (RealN r) = Real r
 
+-- * Wrapper Types
+
 -- | Wrapper for the 'NotC' contract.
 newtype Never a = Never { getNever :: Value } deriving (Eq, Show, Read)
 -- | Wrapper for the 'StringC' contract
@@ -98,6 +105,8 @@ instance ValueConvertible Str where
 
 instance ValueConvertible Sym where
   toValue = Symbol . getSym
+
+-- * Contract Type
 
 -- | The 'Contract' type represents a description of what an FP15 'Value' can
 -- be, and the decomposition of it to Haskell type.  A contract of type

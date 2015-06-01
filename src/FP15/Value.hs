@@ -8,7 +8,7 @@ data Value = Bool Bool
            | Symbol String
            | String String
            | List [Value]
-            deriving (Eq, Show, Read)
+            deriving (Eq, Ord, Show, Read)
 
 class Eq t => ValueConvertible t where
   toValue :: t -> Value
@@ -31,6 +31,6 @@ instance ValueConvertible Float where
 instance ValueConvertible String where
   toValue = String
 
-instance ValueConvertible [Value] where
-  toValue = List
+instance ValueConvertible a => ValueConvertible [a] where
+  toValue = List . map toValue
 

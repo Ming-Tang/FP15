@@ -14,7 +14,8 @@ cabal.sandbox.config
 *.prof
 *.aux
 *.hp
-
+**/Lexer.hs
+**/Parser.hs
 Session.vim
 .*.swp
 .*.sock

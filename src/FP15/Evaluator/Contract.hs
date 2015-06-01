@@ -6,13 +6,23 @@ import Data.These(These(..))
 import FP15.Value(Value(..))
 import FP15.Evaluator.Types
 
+-- * Common Contracts
+
 listAnyC = ListC AnyC
 any2C = Args2C AnyC AnyC
 any3C = Args3C AnyC AnyC AnyC
 any4C = Args4C AnyC AnyC AnyC AnyC
 any5C = Args5C AnyC AnyC AnyC AnyC AnyC
 
+-- * Validation
+
+-- | The 'validate' function validates a 'Value' against a 'Contract'. If the
+-- value is validated by the contract, then 'Just' of the extracted value will
+-- be returned. Otherwise, if the validation fails, then 'Nothing' is returned.
 validate :: Contract a -> Value -> Maybe a
+-- | The 'validateList' function validates a list of values against a contract.
+-- If /all/ items in the list have been validated, then 'Just' of the extracted
+-- values for each element will be returned. Otherwise, 'Nothing' is returned.
 validateList :: Contract a -> [Value] -> Maybe [a]
 
 validateList c xs =
