@@ -34,6 +34,62 @@ getModuleName (M n) = n
 data Name a = N ![String] !String
             deriving (Eq, Ord, Show, Read)
 
+convName :: Name a -> Name b
+convName (N a b) = N a b
+
+-- * Bound Names
+
+-- | An unique identifier.
+type UId = Integer
+
+-- | A name that can potentially be bound. Bound variables are known to have
+-- different meanings despite same appearance, therefore, an unique identifier,
+-- @UId@ is attached to each bound variable. Two bound variables are equal if
+-- and only if their @(UId, n)@ pair are equal. Comparing by @UId@ alone would
+-- make this datatype more difficult to work with. That means, @BS 1 "x"@ is not
+-- same as @BS 1 "y"@.
+--
+-- @UId@s come from unique name generators and unique name generators should
+-- never reuse an @UId@, to minimize confusion.
+--
+-- There are two kinds of bound variables in this datatype: binding source, or
+-- @BS@, which introduces a binding to a subexpression, and bound variable,
+-- or @BV@, which uses an existing binding.
+--
+-- Here is an example usage of 'Bound'. Consider the FP15 expression
+-- @f (:[g=h;h=g] (:[h=k] h) h)@. It would have the following names in terms of
+-- @Bound String@, listing from left to right:
+--
+-- @
+--   f: UB "f"    -- f is not bound
+--
+--   g: BS 0 "g"  -- local definition of g
+--   h: BV 1 "h"  -- reference to h in outer scope
+--   h: BS 1 "h"  -- local definition of h
+--   g: BV 0 "g"  -- reference to h in outer scope
+--
+--   h: BS 2 "h"  -- local definition of inner h
+--   k: UB "k"    -- k is not bound
+--   h: BV 2 "h"  -- reference to h in inner scope
+--   h: BV 1 "h"  -- reference to h in outer scope
+-- @
+--
+-- When renaming any variables above, the meaning of the expression is preserved
+-- if and only if:
+--
+--   * Any of the @UB@ variables renamed to another distinct @UB@ variable
+--   * Any of the @BS@ variable renamed to another @BS@ of distinct @(UId, n)@,
+--     and all corresponding @BV@ have their @(UId, n)@ renamed the same way.
+data Bound n
+  = UB !n -- ^ An unbound (free) name.
+  | BS !UId !n -- ^ A binding source: introduces a binding to a subexpr.
+  | BV !UId !n -- ^ A bound variable: refers to an existing binding source.
+  deriving (Eq, Ord, Show, Read)
+
+-- | State of the unique name generator, which contains the autoincrement
+-- counter of next 'UId' and a set of forbidden 'UId's.
+type UGenState = (UId, Map UId ())
+
 -- * Source Position
 
 -- | The type of source positions, which locates the part of a source file by
@@ -157,6 +213,7 @@ deriving instance Read ExprAST
 
 
 data ExprState = Unresolved ExprAST
+               | Unlifted BExpr
                | Unreduced Expr
                | Reduced Expr
                deriving (Eq, Ord, Show, Read)
