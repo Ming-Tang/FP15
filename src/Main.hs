@@ -12,6 +12,8 @@ import FP15.Evaluator.Contract()
 import FP15.Evaluator.Standard(standardEnv)
 import FP15.Evaluator.Translation(BaseExpr(..), transMap)
 import FP15.Compiler
+import FP15.Compiler.Precedence()
+import FP15.Compiler.Reduction()
 import FP15.Standard(standardCMS)
 
 (c, f, fo, cm) = (Const, Func, Fork, Compose)

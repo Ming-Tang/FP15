@@ -1,5 +1,4 @@
 module FP15.Compiler.Reduction where
-import Data.List(foldl')
 import Control.Monad.Error
 import Control.Monad.Trans.Reader
 import Control.Applicative
@@ -14,18 +13,18 @@ class LookupF e where
 class LookupFl e where
   lookupFl :: e -> Name Fl -> Maybe ()
 
-class LookupOp e where
-  lookupOp :: e -> Maybe (Either () ())
+class LookupFOp e where
+  lookupFOp :: e -> Name Unknown -> Maybe (Fixity F)
 
-class (LookupF e, LookupFl e, LookupOp e) => Lookup e where {}
+class LookupFlOp e where
+  lookupFlOp :: e -> Name Unknown -> Maybe (Fixity Fl)
+
+class (LookupFOp e, LookupFlOp e) => LookupOp e where
+class (LookupF e, LookupFl e, LookupOp e) => Lookup e where
 
 -- | Given an ExprAST, convert it to BExpr
 convExprAST :: LookupOp e => e -> ExprAST -> Either String BExpr
 convExprAST env ast = runReaderT (toBE ast) env
-
-extractOps :: [ExprAST] -> [Either () [ExprAST]]
-extractOps = foldl' f []
-  where f acc x = acc
 
 toBE :: LookupOp e => ExprAST -> ReaderT e (Either String) BExpr
 toBE (TValue v) = return $ BConst v

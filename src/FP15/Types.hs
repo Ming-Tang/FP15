@@ -1,4 +1,4 @@
-{-# LANGUAGE EmptyDataDecls, StandaloneDeriving #-}
+{-# LANGUAGE EmptyDataDecls, StandaloneDeriving, DeriveFunctor #-}
 module FP15.Types where
 import FP15.Value(Value)
 import qualified Data.Map.Strict as M
@@ -102,7 +102,7 @@ data SrcPos = SrcPos { position :: !Int
 
 -- | A value with optional location information attached.
 data Located a = Loc !(Maybe SrcPos) a
-               deriving (Eq, Ord, Show, Read)
+               deriving (Eq, Ord, Show, Read, Functor)
 
 getSrcPos :: Located a -> Maybe SrcPos
 getLocated :: Located a -> a
