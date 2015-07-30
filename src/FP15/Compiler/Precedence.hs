@@ -41,8 +41,9 @@ data RightTree o a = Last [PrecNode o a]
                    | RBranch [PrecNode o a] (Assoc, o) (RightTree o a)
                    deriving (Eq, Ord, Show, Read)
 
-data PrecParseError o a = ConsecutiveTerms a a
-                        | MixingVarOp [o] (Tree o a)
+data PrecParseError o a = ConsecutiveTerms [PrecNode o a]
+                        | MixingVarOp [o] [[PrecNode o a]]
+                        deriving (Eq, Ord, Show, Read)
 
 type Result r o a = Either (PrecParseError o a) (r o a)
 
@@ -97,8 +98,7 @@ parsePrec' _ [TermN x] = return $ Term (Just x)
 parsePrec' _ [InfN _ _ o] = return $ Inf (Term Nothing) o (Term Nothing)
 parsePrec' _ [PreN _ o] = return $ Pre o (Term Nothing)
 parsePrec' [] (PreN _ o : xs) = Pre o <$> parsePrec' [] xs
-parsePrec' [] (_:_) =
-  error "FP15.Compiler.Precedence.parsePrec: empty prec with 2+ nodes"
+parsePrec' [] xs@(_:_) = Left $ ConsecutiveTerms xs
 
 -- | Given a 'RightTree' of operators with same precedence, join them into a
 -- 'Tree'.
@@ -116,8 +116,8 @@ joinParts f ps = let (xs, y) = toListR ps in
           return $ Var o (ys ++ [z])
         Left Nothing ->
           error "FP15.Compiler.Precedence.joinParts: impossible"
-        Right _ ->
-          error "FP15.Compiler.Precedence.joinParts: multiple variadic ops"
+        Right os ->
+          Left $ MixingVarOp os $ map (\(a, _, _) -> a) xs ++ [y]
     Left (Just LeftA) -> do
       let (x0, xs') = toListL ps
       y0 <- f x0
@@ -164,7 +164,7 @@ splitInfixNode p = parsePairs . split (whenElt $ isInfixNodeOf p) where
   parsePairs [x] = return $ Last x
   parsePairs (x:[InfN a' p' o]:xs)
     | p == (p', Just a') = RBranch x (a', o) <$> parsePairs xs
-    | otherwise = error "FP15.Compiler.Precedence.splitInfixNode: wrong prec"
+    | otherwise = error "FP15.Compiler.Precedence.splitInfixNode: impossible: wrong prec"
   parsePairs _ = error "FP15.Compiler.Precedence.splitInfixNode: impossible: empty list"
 
 isInfixNodeOf :: PrecRepr -> PrecNode o a -> Bool

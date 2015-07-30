@@ -36,7 +36,7 @@ genTermPart = do
   return $ pre ++ [t]
 
 genInfPart :: (Arbitrary o, Arbitrary a) => Gen (PrecNode o a)
-genInfPart = InfN <$> arbitrary <*> arbitrary <*> arbitrary
+genInfPart = InfN <$> oneof [pure LeftA, pure RightA] <*> arbitrary <*> arbitrary
 
 nonTermNode :: (Arbitrary o, Arbitrary a) => Gen (PrecNode o a)
 nonTermNode = oneof [ PreN <$> arbitrary <*> arbitrary
@@ -57,6 +57,14 @@ genTreeListOfSize :: (Arbitrary o, Arbitrary a) => Int -> Gen [Tree o a]
 genTreeListOfSize m = do n <- oneof $ map pure [1..8]
                          vectorOf n (genTreeOfSize $ 1 + m `div` n)
 
-main = quickCheckWith stdArgs { maxSuccess = 10000 } prop_parsePrecNoError
+test x = quickCheckWith stdArgs { maxSuccess = 2500 } x
+test1 = test prop_parsePrecInvariantNoError
+test2 = test prop_parsePrecNoError
 
-prop_parsePrecNoError = (\(PrecNodeList x) -> seq (parsePrec (x :: [PrecNode (Maybe Bool) (Maybe Bool)])) True)
+prop_parsePrecInvariantNoError = (\(PrecNodeList x) -> seq (unwrap $ parsePrec (x :: [PrecNode (Maybe Bool) (Maybe Bool)])) True)
+prop_parsePrecNoError = (\x -> seq (parsePrec (x :: [PrecNode (Maybe Bool) (Maybe Bool)])) True)
+
+unwrap :: Show e => Either e b -> b
+unwrap (Left x) = error $ show x
+unwrap (Right x) = x
+
