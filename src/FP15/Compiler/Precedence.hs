@@ -1,5 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
 module FP15.Compiler.Precedence (
+  -- * Examples
+  -- $examples
+
   -- * Main Types
   Assoc(..), PrecNode(..), Tree(..), RightTree(..),
   -- * Type Synonyms
@@ -36,6 +39,9 @@ data Tree o a = Pre o (Tree o a)
 data RightTree o a = Last [PrecNode o a]
                    | RBranch [PrecNode o a] (Assoc, o) (RightTree o a)
                    deriving (Eq, Ord, Show, Read)
+
+data PrecParseError o a = ConsecutiveTerms a a
+                        | MixingVarOp [o] (Tree o a)
 
 showTree :: (Show o, Show a) => Tree o a -> String
 showTree = showTree' show show
@@ -87,6 +93,7 @@ parsePrec' _ [] = Term Nothing
 parsePrec' _ [TermN x] = Term (Just x)
 parsePrec' _ [InfN _ _ o] = Inf (Term Nothing) o (Term Nothing)
 parsePrec' _ [PreN _ o] = Pre o (Term Nothing)
+parsePrec' [] (PreN _ o : xs) = Pre o $ parsePrec' [] xs
 parsePrec' [] (_:_) =
   error "FP15.Compiler.Precedence.parsePrec: empty prec with 2+ nodes"
 
@@ -109,7 +116,8 @@ joinParts f ps = let (xs, y) = toListR ps in
       let (x0, xs') = toListL ps in
       foldl (\a (_, o, b) -> Inf a o (f b)) (f x0) xs'
     Left (Just RightA) -> foldr (\(a, _, o) b -> Inf (f a) o b) (f y) xs
-    Right _ -> error "FP15.Compiler.Precedence.joinParts: multiple assocs"
+    Right _ ->
+      error "FP15.Compiler.Precedence.joinParts: impossible: multiple assocs"
 
 toListR :: RightTree o a -> ([([PrecNode o a], Assoc, o)], [PrecNode o a])
 toListR (Last x) = ([], x)
@@ -138,10 +146,49 @@ uniq l = case S.toList $ S.fromList l of
 -- Last [PreN 0 "+",TermN "x"]
 -- >>> splitInfixNode (0, Just LeftA) [TermN "x", InfN LeftA 0 "+", TermN "y"]
 -- RBranch [TermN "x"] (LeftA,"+") (Last [TermN "y"])
--- >>> splitInfixNode (1, Just LeftA) [TermN "x", InfN LeftA 0 "+", TermN "y"]
--- Last [TermN "x",InfN LeftA 0 "+",TermN "y"]
--- >>> splitInfixNode (0, Just LeftA) [InfN LeftA 0 "+", TermN "y"]
--- RBranch [] (LeftA,"+") (Last [TermN "y"])
+-- >>> splitInfixNode (0, Just LeftA) [TermN "x", InfN LeftA 0 "+", TermN "y", InfN LeftA 1 "*", TermN "z"]
+-- RBranch [TermN "x"] (LeftA,"+") (Last [TermN "y",InfN LeftA 1 "*",TermN "z"])
+splitInfixNode :: PrecRepr -> [PrecNode o a] -> RightTree o a
+splitInfixNode p = parsePairs . split (whenElt $ isInfixNodeOf p) where
+  parsePairs [x] = Last x
+  parsePairs (x:[InfN a' p' o]:xs)
+    | p == (p', Just a') = RBranch x (a', o) (parsePairs xs)
+    | otherwise = error "FP15.Compiler.Precedence.splitInfixNode: wrong prec"
+  parsePairs _ = error "FP15.Compiler.Precedence.splitInfixNode: impossible: empty list"
+
+isInfixNodeOf :: PrecRepr -> PrecNode o a -> Bool
+isInfixNodeOf p (InfN a p' _) = (p', Just a) == p
+isInfixNodeOf _ _ = False
+
+-- $examples
+-- Here are some examples to demonstrate precedence parsing.
+--
+-- Some definitions to make the inputs more readable.
+--
+-- >>> let (t,l,r,v,p) = (TermN,InfN LeftA,InfN RightA,InfN VarA,PreN)
+--
+-- Left associative operator:
+--
+-- >>> showStringTree $ parsePrec [t"x", l 0 "+", t"y", l 0 "+", t"z", l 0 "-", t"w"]
+-- "(((x + y) + z) - w)"
+--
+-- Right associative operator:
+--
+-- >>> showStringTree $ parsePrec [t"x", r 0 "+", t"y", r 0 "+", t"z", r 0 "-", t"w"]
+-- "(x + (y + (z - w)))"
+--
+-- Variadic associative operator:
+--
+-- >>> showStringTree $ parsePrec [t"x", v 0 "><", t"y", v 0 "><", t"z", v 0 "><", t"w"]
+-- "(>< x y z w)"
+--
+-- For same precedence level, right-associative has higher precedence and
+-- variadic has lowest.
+--
+-- >>> showStringTree $ parsePrec [t"a", l 0 "->", t"b", l 0 "->", t"d", r 0 "<-", t"c", l 0 "->", t"e"]
+-- "(((a -> b) -> (d <- c)) -> e)"
+
+-- $doctests
 -- >>> splitInfixNode (0, Just LeftA) [TermN "x", InfN LeftA 0 "+"]
 -- RBranch [TermN "x"] (LeftA,"+") (Last [])
 -- >>> splitInfixNode (0, Just LeftA) [InfN LeftA 0 "+"]
@@ -156,15 +203,8 @@ uniq l = case S.toList $ S.fromList l of
 -- RBranch [TermN "x"] (LeftA,"+") (RBranch [InfN LeftA 1 "*",TermN "z"] (LeftA,"-") (Last []))
 -- >>> splitInfixNode (1, Just LeftA) [PreN 1 "~", InfN LeftA 1 "*", TermN "z", InfN LeftA 1 "%"]
 -- RBranch [PreN 1 "~"] (LeftA,"*") (RBranch [TermN "z"] (LeftA,"%") (Last []))
-splitInfixNode :: PrecRepr -> [PrecNode o a] -> RightTree o a
-splitInfixNode p = parsePairs . split (whenElt $ isInfixNodeOf p) where
-  parsePairs [x] = Last x
-  parsePairs (x:[InfN a' p' o]:xs)
-    | p == (p', Just a') = RBranch x (a', o) (parsePairs xs)
-    | otherwise = error "FP15.Compiler.Precedence.splitInfixNode: wrong prec"
-  parsePairs _ = error "FP15.Compiler.Precedence.splitInfixNode: empty list"
-
-isInfixNodeOf :: PrecRepr -> PrecNode o a -> Bool
-isInfixNodeOf p (InfN a p' _) = (p', Just a) == p
-isInfixNodeOf _ _ = False
+-- >>> splitInfixNode (1, Just LeftA) [TermN "x", InfN LeftA 0 "+", TermN "y"]
+-- Last [TermN "x",InfN LeftA 0 "+",TermN "y"]
+-- >>> splitInfixNode (0, Just LeftA) [InfN LeftA 0 "+", TermN "y"]
+-- RBranch [] (LeftA,"+") (Last [TermN "y"])
 
