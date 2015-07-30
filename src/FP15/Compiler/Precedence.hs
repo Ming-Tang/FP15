@@ -14,6 +14,7 @@ module FP15.Compiler.Precedence (
   -- * Helpers
   showTree, showTree', showStringTree, getPrec
 ) where
+import Control.Applicative
 import Data.Maybe(mapMaybe)
 import Data.List.Split(split, whenElt)
 import Data.List
@@ -42,6 +43,8 @@ data RightTree o a = Last [PrecNode o a]
 
 data PrecParseError o a = ConsecutiveTerms a a
                         | MixingVarOp [o] (Tree o a)
+
+type Result r o a = Either (PrecParseError o a) (r o a)
 
 showTree :: (Show o, Show a) => Tree o a -> String
 showTree = showTree' show show
@@ -79,21 +82,21 @@ ins x (a:b:cs) !acc = ins x (b:cs) (acc ++ [a])
 --
 -- Precondition: @ns@ is a result of @insDefault@. In other words, @ns@ cannot
 -- contain two consecutive 'TermN's.
-parsePrec :: Ord o => [PrecNode o a] -> Tree o a
+parsePrec :: Ord o => [PrecNode o a] -> Result Tree o a
 parsePrec ns = parsePrec' precs ns where
   precs = sort $ mapMaybe getPrec ns
 
-parsePrec' :: Ord o => [PrecRepr] -> [PrecNode o a] -> Tree o a
+parsePrec' :: Ord o => [PrecRepr] -> [PrecNode o a] -> Result Tree o a
 parsePrec' (p2@(p, _):ps) (PreN p0 o : ns)
-  | p0 < p = Pre o $ parsePrec' (p2:ps) ns
-parsePrec' (p:ps) ns = joinParts (parsePrec' ps) $ splitInfixNode p ns
+  | p0 < p = Pre o <$> parsePrec' (p2:ps) ns
+parsePrec' (p:ps) ns = joinParts (parsePrec' ps) =<< splitInfixNode p ns
 
 -- Base cases
-parsePrec' _ [] = Term Nothing
-parsePrec' _ [TermN x] = Term (Just x)
-parsePrec' _ [InfN _ _ o] = Inf (Term Nothing) o (Term Nothing)
-parsePrec' _ [PreN _ o] = Pre o (Term Nothing)
-parsePrec' [] (PreN _ o : xs) = Pre o $ parsePrec' [] xs
+parsePrec' _ [] = return $ Term Nothing
+parsePrec' _ [TermN x] = return $ Term (Just x)
+parsePrec' _ [InfN _ _ o] = return $ Inf (Term Nothing) o (Term Nothing)
+parsePrec' _ [PreN _ o] = return $ Pre o (Term Nothing)
+parsePrec' [] (PreN _ o : xs) = Pre o <$> parsePrec' [] xs
 parsePrec' [] (_:_) =
   error "FP15.Compiler.Precedence.parsePrec: empty prec with 2+ nodes"
 
@@ -101,21 +104,29 @@ parsePrec' [] (_:_) =
 -- 'Tree'.
 --
 -- Precondition: All nodes must have consistent associativity.
-joinParts :: Ord o => ([PrecNode o a] -> Tree o a) -> RightTree o a -> Tree o a
+joinParts :: Ord o => ([PrecNode o a] -> Result Tree o a) -> RightTree o a -> Result Tree o a
 joinParts f ps = let (xs, y) = toListR ps in
   case uniq $ map (\(_, a, _) -> a) xs of
     Left Nothing -> f y
     Left (Just VarA) ->
       case uniq $ map (\(_, _, o) -> o) xs of
-        Left (Just o) -> Var o (map (\(x, _, _) -> f x) xs ++ [f y])
+        Left (Just o) -> do
+          ys <- mapM (\(x, _, _) -> f x) xs
+          z <- f y
+          return $ Var o (ys ++ [z])
         Left Nothing ->
           error "FP15.Compiler.Precedence.joinParts: impossible"
         Right _ ->
           error "FP15.Compiler.Precedence.joinParts: multiple variadic ops"
-    Left (Just LeftA) ->
-      let (x0, xs') = toListL ps in
-      foldl (\a (_, o, b) -> Inf a o (f b)) (f x0) xs'
-    Left (Just RightA) -> foldr (\(a, _, o) b -> Inf (f a) o b) (f y) xs
+    Left (Just LeftA) -> do
+      let (x0, xs') = toListL ps
+      y0 <- f x0
+      ys <- mapM (\(a0, o, b) -> f b >>= \b' -> return (a0, o, b')) xs'
+      return $ foldl (\a (_, o, b') -> Inf a o b') y0 ys
+    Left (Just RightA) -> do
+      z0 <- f y
+      ys <- mapM (\(a, a0, o) -> f a >>= \a' -> return (a', a0, o)) xs
+      return $ foldr (\(a', _, o) b -> Inf a' o b) z0 ys
     Right _ ->
       error "FP15.Compiler.Precedence.joinParts: impossible: multiple assocs"
 
@@ -148,11 +159,11 @@ uniq l = case S.toList $ S.fromList l of
 -- RBranch [TermN "x"] (LeftA,"+") (Last [TermN "y"])
 -- >>> splitInfixNode (0, Just LeftA) [TermN "x", InfN LeftA 0 "+", TermN "y", InfN LeftA 1 "*", TermN "z"]
 -- RBranch [TermN "x"] (LeftA,"+") (Last [TermN "y",InfN LeftA 1 "*",TermN "z"])
-splitInfixNode :: PrecRepr -> [PrecNode o a] -> RightTree o a
+splitInfixNode :: PrecRepr -> [PrecNode o a] -> Result RightTree o a
 splitInfixNode p = parsePairs . split (whenElt $ isInfixNodeOf p) where
-  parsePairs [x] = Last x
+  parsePairs [x] = return $ Last x
   parsePairs (x:[InfN a' p' o]:xs)
-    | p == (p', Just a') = RBranch x (a', o) (parsePairs xs)
+    | p == (p', Just a') = RBranch x (a', o) <$> parsePairs xs
     | otherwise = error "FP15.Compiler.Precedence.splitInfixNode: wrong prec"
   parsePairs _ = error "FP15.Compiler.Precedence.splitInfixNode: impossible: empty list"
 
