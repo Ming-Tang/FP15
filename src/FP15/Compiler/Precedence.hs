@@ -5,6 +5,7 @@ module FP15.Compiler.Precedence (
 
   -- * Main Types
   Assoc(..), PrecNode(..), Tree(..), RightTree(..),
+  PrecParseError(..),
   -- * Type Synonyms
   Prec, PrecRepr,
   -- * Precdence Parsing
@@ -18,10 +19,8 @@ import Control.Applicative
 import Data.Maybe(mapMaybe)
 import Data.List.Split(split, whenElt)
 import Data.List
+import FP15.Types(Prec)
 import qualified Data.Set as S
-
--- | Operator precedence.
-type Prec = Int
 
 -- | Precedence are tie-broken by associativity.
 type PrecRepr = (Prec, Maybe Assoc)
@@ -41,8 +40,8 @@ data RightTree o a = Last [PrecNode o a]
                    | RBranch [PrecNode o a] (Assoc, o) (RightTree o a)
                    deriving (Eq, Ord, Show, Read)
 
-data PrecParseError o a = ConsecutiveTerms [PrecNode o a]
-                        | MixingVarOp [o] [[PrecNode o a]]
+data PrecParseError o a = ConsecutiveTerms ![PrecNode o a]
+                        | MixingVarOp ![o] ![[PrecNode o a]]
                         deriving (Eq, Ord, Show, Read)
 
 type Result r o a = Either (PrecParseError o a) (r o a)
@@ -70,8 +69,8 @@ getPrec _ = Nothing
 -- | The 'insDefault' function inserts a default infix operator between two
 -- adjacent terms. Must be done because the precedence parsing functions cannot
 -- handle two consecutive terms.
-insDefault :: PrecNode o a -> [PrecNode o a] -> [PrecNode o a]
-insDefault x ns = ins x ns []
+insDefault :: (Assoc, Prec, o) -> [PrecNode o a] -> [PrecNode o a]
+insDefault (a, p, o) ns = ins (InfN a p o) ns []
 
 ins :: PrecNode o a -> [PrecNode o a] -> [PrecNode o a] -> [PrecNode o a]
 ins x [] !acc = acc

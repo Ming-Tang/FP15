@@ -110,6 +110,9 @@ getLocated :: Located a -> a
 getSrcPos (Loc spos _) = spos
 getLocated (Loc _ x) = x
 
+noLoc :: a -> Located a
+noLoc = Loc Nothing
+
 type LocId a = Located (Id a)
 type LocName a = Located (Name a)
 
@@ -193,8 +196,6 @@ data ExprAST = TValue Value
              | TOperator (LocName Unknown)
              | TDotOperator (LocName F)
              | TApp (LocName Fl) [ExprAST]
-             | TUnary (LocName FOp) ExprAST
-             | TBinary ExprAST (LocName FOp) ExprAST
              | TIndex Int
 
              | TIf ExprAST ExprAST ExprAST
@@ -241,16 +242,15 @@ data PreparationError = ImportCycle { modulesInCycle :: [ModuleName] }
 -- * Custom operators
 type Prec = (Int, Int)
 
-data OperatorAlias a = AsIs | AliasOf (Name a)
-                     deriving (Eq, Ord, Show, Read)
-
-data OperatorType = Prefix | LeftAssoc | RightAssoc
+data OperatorType = Prefix | LeftAssoc | RightAssoc | VarAssoc
                   deriving (Eq, Ord, Show, Read)
 
-data Fixity a = Fixity OperatorType Prec (OperatorAlias a)
+data Fixity a = Fixity OperatorType Prec (Name a)
               deriving (Eq, Ord, Show, Read)
 
 type FixityDecls = ([Fixity F], [Fixity Fl])
+
+type LocFixity a = Located (Fixity a)
 
 -- * ASTs
 
