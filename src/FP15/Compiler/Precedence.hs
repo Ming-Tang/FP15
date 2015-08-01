@@ -7,7 +7,7 @@ module FP15.Compiler.Precedence (
   Assoc(..), PrecNode(..), Tree(..), RightTree(..),
   PrecParseError(..),
   -- * Type Synonyms
-  Prec, PrecRepr,
+  Prec, PrecRepr, Result,
   -- * Precdence Parsing
   insDefault,
   parsePrec,

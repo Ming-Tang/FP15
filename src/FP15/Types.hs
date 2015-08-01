@@ -212,7 +212,6 @@ deriving instance Ord ExprAST
 deriving instance Show ExprAST
 deriving instance Read ExprAST
 
-
 data ExprState = Unresolved ExprAST
                | Unlifted BExpr
                | Unreduced Expr
