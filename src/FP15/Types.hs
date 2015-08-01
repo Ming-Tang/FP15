@@ -113,6 +113,9 @@ getLocated (Loc _ x) = x
 noLoc :: a -> Located a
 noLoc = Loc Nothing
 
+withSameLoc :: Located a -> b -> Located b
+withSameLoc o x = fmap (const x) o
+
 type LocId a = Located (Id a)
 type LocName a = Located (Name a)
 

@@ -1,9 +1,55 @@
 {-# LANGUAGE StandaloneDeriving, FlexibleInstances, FlexibleContexts #-}
 module FP15.Compiler.Types where
 import FP15.Types
+import qualified Data.Map.Strict as M
+
+-- * The Lookup Typeclasses
+-- These typeclasses are for symbol lookups. There are three namespaces for
+-- symbols: function, functional and operator. Notice that operators for
+-- functions and functionals share the same namespace.
+
+class LookupF e where
+  lookupF :: e -> Name F -> Maybe (Located (LocName F))
+
+class LookupFl e where
+  lookupFl :: e -> Name Fl -> Maybe (Located (LocName Fl))
+
+class LookupOp e where
+  lookupOp :: e -> Name Unknown -> Maybe (Either (LocFixity F) (LocFixity Fl))
+
+class (LookupF e, LookupFl e, LookupOp e) => Lookup e where
+
+instance LookupF (M.Map (Name F) (Located (LocName F))) where
+  lookupF = flip M.lookup
+
+instance LookupFl (M.Map (Name Fl) (Located (LocName Fl))) where
+  lookupFl = flip M.lookup
+
+instance LookupOp (M.Map (Name Unknown) (Either (LocFixity F) (LocFixity Fl))) where
+  lookupOp = flip M.lookup
+
+-- ** The Empty Lookup
+
+-- | The 'EmptyLookup' is a dummy implementation for the lookup typeclasses. It
+-- returns 'Nothing' for all inputs.
+data EmptyLookup = EmptyLookup deriving (Eq, Ord, Enum, Bounded, Show, Read)
+
+instance LookupF EmptyLookup where
+  lookupF _ _ = Nothing
+
+instance LookupFl EmptyLookup where
+  lookupFl _ _ = Nothing
+
+instance LookupOp EmptyLookup where
+  lookupOp _ _ = Nothing
+
+-- * Type Synonyms
 
 -- | The function signature of 'FP15.Parsing.Parser.parse'.
 type Parser = ModuleSource -> Either String ModuleAST
+
+
+-- * Module Body
 
 -- | 'ModuleBody' is for creating types that follow the structure of a module,
 -- which contains map of functions, map of functionals, and fixity declarations.

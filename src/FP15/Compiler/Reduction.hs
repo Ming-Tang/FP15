@@ -1,48 +1,15 @@
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 module FP15.Compiler.Reduction where
-import qualified Data.Map.Strict as M
 import Control.Monad.Error
 import Control.Monad.Trans.Reader
 import Control.Applicative
 import FP15.Types
+import FP15.Compiler.Types
 import FP15.Value
 import FP15.Compiler.Precedence
 
 infixl 6 |>
 infixr 6 <|
-
--- * The Lookup Typeclasses
-
-class LookupF e where
-  lookupF :: e -> Name F -> Maybe (Located (LocName F))
-
-class LookupFl e where
-  lookupFl :: e -> Name Fl -> Maybe (Located (LocName F))
-
-class LookupOp e where
-  lookupOp :: e -> Name Unknown -> Maybe (Either (LocFixity F) (LocFixity Fl))
-
-class (LookupF e, LookupFl e, LookupOp e) => Lookup e where
-
-instance LookupOp (Map (Name Unknown) (Either (LocFixity F) (LocFixity Fl))) where
-  lookupOp = flip M.lookup
-
--- ** The Empty Lookup
-
-data EmptyLookup = EmptyLookup deriving (Eq, Ord, Enum, Bounded, Show, Read)
-
-instance LookupF EmptyLookup where
-  lookupF _ _ = Nothing
-
-instance LookupFl EmptyLookup where
-  lookupFl _ _ = Nothing
-
-instance LookupOp EmptyLookup where
-  lookupOp _ _ = Nothing
-
-instance Error BError where
-  strMsg s = ErrorMsg s Nothing
 
 -- * Types
 
@@ -58,6 +25,9 @@ data BError = NoMsg !String
             | FlOpNotAllowed !(LocFixity Fl) !(LocName Unknown)
             | FlPartialOpNotAllowed !(LocName FlOp)
             deriving (Eq, Ord, Show, Read)
+
+instance Error BError where
+  strMsg s = ErrorMsg s Nothing
 
 -- | An 'ResolvedOp' represents an operator (located) that has been successfully
 -- resolved to an identifier.
@@ -76,8 +46,10 @@ convExprAST env ast = runReaderT (toBE ast) env
 toBE :: LookupOp e => ExprAST -> BResult e BExpr
 toBE (TValue v) = return $ BConst v
 toBE (TFunc f) = return $ BFunc f
-toBE o@(TOperator f) = throwError $ ErrorMsg ("TOperator " ++ show f) (Just o)
-toBE o@(TDotOperator f) = throwError $ ErrorMsg ("TDotOperator " ++ show f) (Just o)
+toBE (TOperator o) = do
+  (Loc _ (Fixity _ _ f)) <- lookupFOpOnly o
+  return $ BFunc $ withSameLoc o f
+toBE (TDotOperator f) = return $ BFunc f
 toBE (TApp fl es) = BApp fl <$> mapM toBE es
 toBE (TIndex i) = base "Index" <*> pure [BConst $ Int 1]
 
