@@ -1,8 +1,12 @@
-{-# LANGUAGE EmptyDataDecls, StandaloneDeriving, DeriveFunctor #-}
+{-# LANGUAGE CPP, EmptyDataDecls, StandaloneDeriving, DeriveFunctor #-}
 module FP15.Types where
+#define SPECIAL_SHOW 1
 import FP15.Value(Value)
 import qualified Data.Map.Strict as M
 import qualified Data.List.NonEmpty as NE
+#if SPECIAL_SHOW
+import Data.List(intercalate)
+#endif
 
 -- * Type Synonyms
 
@@ -27,12 +31,23 @@ newtype Id a = Id String
 newtype ModuleName = M [String]
                    deriving (Eq, Ord, Show, Read)
 
+getId :: Id a -> String
+getModuleName :: ModuleName -> [String]
+
 getId (Id i) = i
 getModuleName (M n) = n
 
 -- | A fully-qualified name
 data Name a = N ![String] !String
+#if SPECIAL_SHOW
+            deriving (Eq, Ord, Read)
+
+instance Show (Name a) where
+  show (N [] x) = show x
+  show (N m x) = show (intercalate "." $ m ++ [x])
+#else
             deriving (Eq, Ord, Show, Read)
+#endif
 
 convName :: Name a -> Name b
 convName (N a b) = N a b
@@ -102,7 +117,14 @@ data SrcPos = SrcPos { position :: !Int
 
 -- | A value with optional location information attached.
 data Located a = Loc !(Maybe SrcPos) a
+#if SPECIAL_SHOW
+               deriving (Eq, Ord, Read, Functor)
+
+instance Show a => Show (Located a) where
+  show (Loc _ a) = show a
+#else
                deriving (Eq, Ord, Show, Read, Functor)
+#endif
 
 getSrcPos :: Located a -> Maybe SrcPos
 getLocated :: Located a -> a
@@ -190,7 +212,16 @@ data BExpr = BConst Value
 
 deriving instance Eq BExpr
 deriving instance Ord BExpr
+#if SPECIAL_SHOW
+instance Show BExpr where
+  show (BConst v) = "(BConst " ++ show v ++ ")"
+  show (BApp f xs) = "(BApp " ++ show f ++ " " ++ unwords (map show xs) ++ ")"
+  show (BFunc f) = "(BFunc " ++ show f ++ ")"
+  show (BLet bs x) = "(BLet " ++ show bs ++ " " ++ show x ++ ")"
+
+#else
 deriving instance Show BExpr
+#endif
 deriving instance Read BExpr
 
 -- | An FP15 expression as seen by the parser.

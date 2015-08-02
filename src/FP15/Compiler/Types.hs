@@ -9,23 +9,23 @@ import qualified Data.Map.Strict as M
 -- functions and functionals share the same namespace.
 
 class LookupF e where
-  lookupF :: e -> Name F -> Maybe (Located (LocName F))
+  lookupF :: e -> Name F -> Maybe FName
 
 class LookupFl e where
-  lookupFl :: e -> Name Fl -> Maybe (Located (LocName Fl))
+  lookupFl :: e -> Name Fl -> Maybe FlName
 
 class LookupOp e where
-  lookupOp :: e -> Name Unknown -> Maybe (Either (LocFixity F) (LocFixity Fl))
+  lookupOp :: e -> Name Unknown -> Maybe (Either FFixity FlFixity)
 
 class (LookupF e, LookupFl e, LookupOp e) => Lookup e where
 
-instance LookupF (M.Map (Name F) (Located (LocName F))) where
+instance LookupF (M.Map FName FName) where
   lookupF = flip M.lookup
 
-instance LookupFl (M.Map (Name Fl) (Located (LocName Fl))) where
+instance LookupFl (M.Map FlName FlName) where
   lookupFl = flip M.lookup
 
-instance LookupOp (M.Map (Name Unknown) (Either (LocFixity F) (LocFixity Fl))) where
+instance LookupOp (M.Map (Name Unknown) (Either FFixity FlFixity)) where
   lookupOp = flip M.lookup
 
 -- ** The Empty Lookup
@@ -121,7 +121,7 @@ data StaticState
 -- by" relationship between functions, as an adjacency map. The edge @a -> b@
 -- denotes the function @b@ depends on @a@.
 newtype ReducingModule
-  = Reducing (ModuleBody Id ExprState FunctionalDefinition () ())
+  = Reducing (ModuleBody Id ExprState FunctionalDefinition FFixity FlFixity)
   deriving (Eq, Ord, Show, Read)
 
 -- | The state of the reducing module.
@@ -138,7 +138,7 @@ data ReducingModuleState
 
 -- | A 'CompiledModule' represents a module with functions in compiled state.
 newtype CompiledModule
-  = Compiled (ModuleBody Id Expr FunctionalDefinition () ())
+  = Compiled (ModuleBody Id Expr FunctionalDefinition FFixity FlFixity)
   deriving (Eq, Ord, Show, Read)
 
 data CompiledModuleItem
@@ -151,6 +151,10 @@ newtype CompiledModuleSet
   = CompiledModuleSet (Map ModuleName CompiledModuleItem)
   deriving (Eq, Ord, Show, Read)
 
+getCompiledModule :: CompiledModule -> ModuleBody Id Expr FunctionalDefinition FFixity FlFixity
+getCompiledModuleSet :: CompiledModuleSet -> Map ModuleName CompiledModuleItem
+
+getReducingModule :: ReducingModule -> ModuleBody Id ExprState FunctionalDefinition FFixity FlFixity
 getReducingModule (Reducing r) = r
 getCompiledModule (Compiled c) = c
 getCompiledModuleSet (CompiledModuleSet c) = c

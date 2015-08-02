@@ -15,4 +15,13 @@ fac2 = (If (Compose (Fork _ 1) <)
            (Compose (Fork _ (Compose pred fac)) <))
 
 avg = (sum % len)
-avg = [sum, len] %
+-- TODO duplicate definitions are not reported
+avg1 = [sum, len] %
+
+dblPlusReci = (2* + 1%)
+dblPlusReci1 = (*2 + 1%)
+dblPlusReci2 = (1% + *2)
+dblPlusReci3 = ((*2) + (1%))
+dblPlusReci4 = ((_*2) + (1%_))
+dblPlusReci5 = [[_,2]*, [1,_]%] +
+

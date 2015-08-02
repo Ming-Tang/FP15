@@ -61,8 +61,9 @@ toBE (TUnresolvedPrimaryList ps) =
   toPrecNodesFl ps
   >>= lift . conv PrecErrorFl . parsePrec . insDefault composeOp
   >>= fromTreeFl where
+  -- TODO move this as a constant
   composeOp :: (Assoc, Prec, ResolvedOp Fl)
-  composeOp = (LeftA, (0, 0), ResolvedOp boCompose $ getLocated bnCompose)
+  composeOp = (VarA, (0, 0), ResolvedOp boCompose $ getLocated bnCompose)
 
 toBE (TUnresolvedInfixNotation ps) =
   toPrecNodesF ps
@@ -78,8 +79,8 @@ toPrecNodeFl :: LookupOp e => ExprAST -> BResult e (PrecNode (ResolvedOp Fl) Exp
 toPrecNodeFl (TOperator o@(Loc l _)) = do
   o' <- lookupOpOnly o
   case o' of
-    Left (Loc _ (Fixity _ _ fa)) -> return $ TermN $ TFunc $ Loc l fa
-    Right f -> return $ precNodeFromFixity o f
+    Left (Fixity _ _ fa) -> return $ TermN $ TFunc $ withSameLoc o fa
+    Right f -> return $ precNodeFromFixity o $ Loc l f
 
 toPrecNodeFl (TDotOperator f) = return $ TermN $ TFunc f
 toPrecNodeFl x = return $ TermN x
@@ -132,11 +133,11 @@ lookupFOpOnly n = do
   e <- ask
   case lookupOp e $ getLocated n of
     Nothing -> throwError $ OpNotFound n
-    Just (Right o) -> throwError $ FlOpNotAllowed o n
-    Just (Left o) -> return o
+    Just (Right o) -> throwError $ FlOpNotAllowed (withSameLoc n o) n
+    Just (Left o) -> return $ withSameLoc n o
 
 lookupOpOnly :: LookupOp e => LocName Unknown
-                -> BResult e (Either (LocFixity F) (LocFixity Fl))
+                -> BResult e (Either FFixity FlFixity)
 lookupOpOnly n = do
   e <- ask
   case lookupOp e $ getLocated n of
@@ -152,7 +153,7 @@ baseName :: String -> LocName f
 baseName = Loc Nothing . N ["Std"]
 
 pId :: BExpr
-pId = BFunc $ baseName "id"
+pId = BFunc $ baseName "_"
 
 boCompose :: LocName Unknown
 boCompose = baseName ""

@@ -75,7 +75,10 @@ insDefault (a, p, o) ns = ins (InfN a p o) ns []
 ins :: PrecNode o a -> [PrecNode o a] -> [PrecNode o a] -> [PrecNode o a]
 ins x [] !acc = acc
 ins x [a] !acc = acc ++ [a]
-ins x (a@(TermN _):b@(TermN _):cs) !acc = ins x (b:cs) (acc ++ [a, x])
+ins x (a@(TermN _):b:cs) !acc | isTermOrPrefix b = ins x (b:cs) (acc ++ [a, x])
+  where isTermOrPrefix (TermN _) = True
+        isTermOrPrefix (PreN _ _) = True
+        isTermOrPrefix _ = True
 ins x (a:b:cs) !acc = ins x (b:cs) (acc ++ [a])
 
 -- | The 'parsePrec' performs precedence parsing from a list of 'PrecNode's.
