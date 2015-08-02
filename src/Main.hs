@@ -1,6 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Main where
-import Control.Monad.Trans.Reader
 import qualified Data.Map as M
 import FP15.Parsing()
 import FP15.Parsing.Types
@@ -13,7 +12,7 @@ import FP15.Evaluator.Contract()
 import FP15.Compiler
 import FP15.Compiler.Types
 import FP15.Compiler.Precedence()
-import FP15.Compiler.Reduction(toBE)
+import FP15.Compiler.Reduction(convExprAST)
 import FP15.Standard(standardCMS)
 
 main :: IO ()
@@ -80,9 +79,9 @@ main = do
         Left e -> print e
         Right r@(ReducingModuleState SS { ssIN = in_ } _ (Reducing Module { fs })) ->
           let fs' = M.map mm fs
-              mm (Unresolved n) = runReaderT (toBE n) in_
+              mm (Unresolved n) = convExprAST in_ n
               mm x = error (show x) in
-          print (r, fs, fs')
+          print (fs, fs')
 
 -- main = getContents >>= printTokens
 

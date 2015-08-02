@@ -1,5 +1,14 @@
 {-# LANGUAGE ViewPatterns #-}
-module FP15.Compiler.Reduction where
+-- | Module for converting expressions to different representations, and
+-- emitting errors along the way.
+module FP15.Compiler.Reduction (
+
+-- * @ExprAST -> BExpr@
+  BError
+, ResolvedOp
+, convExprAST
+
+) where
 import Control.Monad.Error
 import Control.Monad.Trans.Reader
 import Control.Applicative
@@ -15,31 +24,60 @@ infixr 6 <|
 
 type BResult e a = ReaderT e (Either BError) a
 
-data BError = NoMsg !String
-            | ErrorMsg !String !(Maybe ExprAST)
-            | OpNotFound !(LocName Unknown)
+type FTree = Tree (ResolvedOp F) ExprAST
+type FlTree = Tree (ResolvedOp Fl) ExprAST
 
-            | PrecErrorF !(PrecParseError (ResolvedOp F) ExprAST)
-            | PrecErrorFl !(PrecParseError (ResolvedOp Fl) ExprAST)
+-- | An error that can occur while converting an 'ExprAST' into
+-- a 'BExpr'.
+data BError
+  -- | Generic error with message and maybe the location of error.
+  = ErrorMsg !String !(Maybe ExprAST)
 
-            | FlOpNotAllowed !(LocFixity Fl) !(LocName Unknown)
-            | FlPartialOpNotAllowed !(LocName FlOp)
-            deriving (Eq, Ord, Show, Read)
+  -- | The specified operator cannot be resolved.
+  | OpNotFound !(LocName Unknown)
+
+  -- | A precedence parsing error has occurred while parsing
+  -- a '()'-expression.
+  | PrecErrorF !(PrecParseError (ResolvedOp F) ExprAST)
+
+  -- | A precedence parsing error has occurred while parsing
+  -- a '{}'-expression.
+  | PrecErrorFl !(PrecParseError (ResolvedOp Fl) ExprAST)
+
+  -- | Functional operators are not allowed in @()@-expressions.
+  -- The argument indicates the offending functional operator.
+  | FlOpNotAllowed !(ResolvedOp Fl)
+
+  -- | Partial operators are not allowed in @{}@-expresions.
+  -- The argument indicates the partially applied operator and its
+  -- operand. The value is described as follows:
+  --
+  --  * @Nothing@ means the location of error is not provided.
+  --
+  --  * @Just (Left (o, b))@ means the left operand is missing.
+  --    @o@ is the operator and @b@ is the right operand.
+  --
+  --  * @Just (Right (a, o))@ means the right operand is missing.
+  --    @o@ is the operator and @a@ is the left operand.
+  | FlPartialOpNotAllowed !(Maybe (Either (ResolvedOp Fl, FlTree)
+                                          (FlTree, ResolvedOp Fl)))
+  deriving (Eq, Ord, Show, Read)
 
 instance Error BError where
   strMsg s = ErrorMsg s Nothing
 
--- | An 'ResolvedOp' represents an operator (located) that has been successfully
--- resolved to an identifier.
+-- | An 'ResolvedOp' represents an operator (with location of mention) that has
+-- been successfully resolved to an identifier.
 data ResolvedOp f = ResolvedOp { getOp :: !(LocName Unknown)
                                , getResolvedId :: !(Name f) }
                   deriving (Eq, Ord, Show, Read)
+
 getLocResolvedId :: ResolvedOp f -> Located (Name f)
 getLocResolvedId (ResolvedOp (Loc l _) i) = Loc l i
 
 -- * Functions
 
--- | Given an ExprAST, convert it to BExpr
+-- | The 'convExprAST' function converts an 'ExprAST' into a 'BExpr'.
 convExprAST :: LookupOp e => e -> ExprAST -> Either BError BExpr
 convExprAST env ast = runReaderT (toBE ast) env
 
@@ -86,11 +124,17 @@ toPrecNodeFl (TDotOperator f) = return $ TermN $ TFunc f
 toPrecNodeFl x = return $ TermN x
 
 fromTreeFl :: LookupOp e => Tree (ResolvedOp Fl) ExprAST -> BResult e BExpr
-fromTreeFl (Term Nothing) = throwError $ ErrorMsg "Missing operand in {}-expression." Nothing
+fromTreeFl (Term Nothing) = throwError $ FlPartialOpNotAllowed Nothing
 fromTreeFl (Term (Just x)) = toBE x
 fromTreeFl (Pre (getLocResolvedId -> o) x) = (BApp o . (:[])) <$> fromTreeFl x
-fromTreeFl (Inf x (getLocResolvedId -> o) y)
-  = (\a b -> BApp o [a, b]) <$> fromTreeFl x <*> fromTreeFl y
+fromTreeFl (Inf x ro@(getLocResolvedId -> o) y)
+  = o2 <$> ce le (fromTreeFl x) <*> ce re (fromTreeFl y) where
+  o2 a b = BApp o [a, b]
+  (le, re) = (Left (ro, y), Right (x, ro))
+  ce c = (`catchError` refineE c)
+  refineE e (FlPartialOpNotAllowed Nothing)
+    = throwError $ FlPartialOpNotAllowed $ Just e
+  refineE _ e = throwError e
 fromTreeFl (Var (getLocResolvedId -> o) xs) = BApp o <$> mapM fromTreeFl xs
 
 toPrecNodesF :: LookupOp e => [ExprAST] -> BResult e [PrecNode (ResolvedOp F) ExprAST]
@@ -115,8 +159,6 @@ fromTreeF (Var (getLocResolvedId -> o) xs) = do
 fromTreeF (Term (Just x)) = toBE x
 fromTreeF (Term Nothing) = return pId
 
--- | The 'precNodeFromFixity' function creates 'PrecNode' of an operator based
--- on an operator and its resolved fixity declaration.
 precNodeFromFixity :: LocName Unknown -> Located (Fixity f)
                     -> PrecNode (ResolvedOp f) a
 precNodeFromFixity o o'@(Loc _ (Fixity typ p oa)) =
@@ -129,20 +171,20 @@ precNodeFromFixity o o'@(Loc _ (Fixity typ p oa)) =
 -- * Lookups
 
 lookupFOpOnly :: LookupOp e => LocName Unknown -> BResult e (LocFixity F)
-lookupFOpOnly n = do
+lookupFOpOnly o = do
   e <- ask
-  case lookupOp e $ getLocated n of
-    Nothing -> throwError $ OpNotFound n
-    Just (Right o) -> throwError $ FlOpNotAllowed (withSameLoc n o) n
-    Just (Left o) -> return $ withSameLoc n o
+  case lookupOp e $ getLocated o of
+    Nothing -> throwError $ OpNotFound o
+    Just (Right (Fixity _ _ a)) -> throwError $ FlOpNotAllowed $ ResolvedOp o a
+    Just (Left f) -> return $ withSameLoc o f
 
 lookupOpOnly :: LookupOp e => LocName Unknown
                 -> BResult e (Either FFixity FlFixity)
-lookupOpOnly n = do
+lookupOpOnly o = do
   e <- ask
-  case lookupOp e $ getLocated n of
-    Nothing -> throwError $ OpNotFound n
-    Just o -> return o
+  case lookupOp e $ getLocated o of
+    Nothing -> throwError $ OpNotFound o
+    Just f -> return f
 
 -- * Primitive Symbols
 
