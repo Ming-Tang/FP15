@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module Main where
 import Control.Monad.Trans.Reader
 import qualified Data.Map as M
@@ -13,7 +14,7 @@ import FP15.Compiler
 import FP15.Compiler.Types
 import FP15.Compiler.Precedence()
 import FP15.Compiler.Reduction(toBE)
-import FP15.Standard(standardCMS, stdOpLookup)
+import FP15.Standard(standardCMS)
 
 main :: IO ()
 {-
@@ -77,11 +78,11 @@ main = do
       let m = stageModule standardCMS ast
       case m of
         Left e -> print e
-        Right (ReducingModuleState _ _ (Reducing Module { fs = fs' })) ->
-          let fs'' = M.map mm fs'
-              mm (Unresolved n) = runReaderT (toBE n) stdOpLookup
+        Right r@(ReducingModuleState SS { ssIN = in_ } _ (Reducing Module { fs })) ->
+          let fs' = M.map mm fs
+              mm (Unresolved n) = runReaderT (toBE n) in_
               mm x = error (show x) in
-          print (fs', fs'')
+          print (r, fs, fs')
 
 -- main = getContents >>= printTokens
 

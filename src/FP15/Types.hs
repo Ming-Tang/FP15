@@ -29,7 +29,14 @@ newtype Id a = Id String
 
 -- | An FP15 module name.
 newtype ModuleName = M [String]
-                   deriving (Eq, Ord, Show, Read)
+#if SPECIAL_SHOW
+            deriving (Eq, Ord, Read)
+
+instance Show ModuleName where
+  show (M m) = show $ intercalate "." m
+#else
+            deriving (Eq, Ord, Show, Read)
+#endif
 
 getId :: Id a -> String
 getModuleName :: ModuleName -> [String]

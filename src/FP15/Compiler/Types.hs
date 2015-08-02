@@ -1,7 +1,11 @@
 {-# LANGUAGE StandaloneDeriving, FlexibleInstances, FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module FP15.Compiler.Types where
+import Control.Monad
+import Control.Applicative
 import FP15.Types
 import qualified Data.Map.Strict as M
+import Data.List.NonEmpty(NonEmpty(..))
 
 -- * The Lookup Typeclasses
 -- These typeclasses are for symbol lookups. There are three namespaces for
@@ -115,6 +119,20 @@ data StaticState
        }
   deriving (Eq, Ord, Show, Read)
 
+_gf :: NE (WithImpSrc a) -> a
+_gf ((_, f) :| _) = f
+
+instance LookupF ImportedNames where
+  lookupF (Imported Module { fs }) e = _gf <$> M.lookup (convName e) fs
+
+instance LookupFl ImportedNames where
+  lookupFl (Imported Module { fls }) e = _gf <$> M.lookup (convName e) fls
+
+instance LookupOp ImportedNames where
+  lookupOp (Imported Module { fFixes, flFixes }) e
+    = f Right flFixes `mplus` f Left fFixes where
+      f c b = (c . _gf) <$> M.lookup (convName e) b
+
 -- | A module that is being reduced.
 --
 -- The @dependencyGraph@ field contains a graph representing the "is depended
@@ -131,7 +149,9 @@ data ReducingTag
   | Finished             -- ^ Module has finished reducing.
                  deriving (Eq, Ord, Show, Read)
 data ReducingModuleState
-  = ReducingModuleState StaticState ReducingTag ReducingModule
+  = ReducingModuleState { rmsSS :: StaticState
+                        , rmsTag :: ReducingTag
+                        , rmsRM :: ReducingModule }
   deriving (Eq, Ord, Show, Read)
 
 -- * Compiled
@@ -142,7 +162,9 @@ newtype CompiledModule
   deriving (Eq, Ord, Show, Read)
 
 data CompiledModuleItem
-  = CompiledModuleItem CompiledModule ModuleInterface (Maybe SourceMapping)
+  = CompiledModuleItem { cmiCM :: CompiledModule
+                       , cmiMI :: ModuleInterface
+                       , cmiSM :: Maybe SourceMapping }
   deriving (Eq, Ord, Show, Read)
 
 -- | A 'CompiledModuleSet' represents a set of compiled modules with module
@@ -151,10 +173,13 @@ newtype CompiledModuleSet
   = CompiledModuleSet (Map ModuleName CompiledModuleItem)
   deriving (Eq, Ord, Show, Read)
 
-getCompiledModule :: CompiledModule -> ModuleBody Id Expr FunctionalDefinition FFixity FlFixity
+getCompiledModule
+  :: CompiledModule -> ModuleBody Id Expr FunctionalDefinition FFixity FlFixity
+getReducingModule
+  :: ReducingModule
+     -> ModuleBody Id ExprState FunctionalDefinition FFixity FlFixity
 getCompiledModuleSet :: CompiledModuleSet -> Map ModuleName CompiledModuleItem
 
-getReducingModule :: ReducingModule -> ModuleBody Id ExprState FunctionalDefinition FFixity FlFixity
 getReducingModule (Reducing r) = r
 getCompiledModule (Compiled c) = c
 getCompiledModuleSet (CompiledModuleSet c) = c
