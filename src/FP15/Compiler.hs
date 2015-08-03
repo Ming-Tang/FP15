@@ -5,12 +5,15 @@
 -- initial module and its dependencies. The fully-reduced forms are ready to be
 -- processed by interpreters or code generators.
 module FP15.Compiler where
+import Data.Either
 import Control.Monad.Error
+import Control.Applicative
 import qualified Data.Map.Strict as M
 import Data.Maybe(mapMaybe)
 import FP15.Types
 import FP15.Compiler.Types
 import FP15.Compiler.Errors
+import FP15.Compiler.Reduction
 import qualified FP15.Compiler.ModuleBody as MB
 import qualified FP15.Compiler.ImportedNames as IN
 --import FP15.Compiler.ModuleResolution()
@@ -75,6 +78,7 @@ resolveImports cms = foldM addImportL $ Imported MB.empty where
   makeErrLocated l (Right x) = Right x
   makeErrLocated l (Left e) = Left (Loc l e)
 
+getModuleInterface :: ModuleAST -> ModuleInterface
 getModuleInterface ModuleAST { astFs, astFls
                              , astFFixes, astFlFixes
                              , astImps, astExps }
@@ -89,9 +93,22 @@ getModuleInterface ModuleAST { astFs, astFls
     cu = const ()
     -- TODO check for presence of Export
 
--- | Perform one reduction step in the module
-stepModule :: ReducingModuleState -> Either String ReducingModuleState
-stepModule _ = Left "stub"
+-- | Perform one reduction step in the module.
+stepModule :: ReducingModuleState -> Either [String] ReducingModuleState
+stepModule r@(ReducingModuleState ss@SS { ssIN }
+                                  rt (Reducing rm@Module { fs })) =
+  case es of
+    [] -> return (ReducingModuleState ss rt (Reducing rm { fs = us }))
+    _ -> throwError es
+  where
+  fs' = M.map mm fs
+  es = map show $ lefts $ map snd $ M.toList fs'
+  us = M.map fromRight fs'
+  mm (Unresolved x) = Unlifted <$> convExprAST ssIN x
+  mm (Unlifted x) = Unreduced <$> convBExpr x
+  mm x = return x
+  fromRight (Right x) = x
+  fromRight (Left _) = error "fromRight: Left."
 
 -- | Given a 'ReducingModuleState', convert it to an 'CompiledModuleItem'.
 --

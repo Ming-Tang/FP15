@@ -71,17 +71,23 @@ main = getContents >>= compile
 
 main = do
   src <- getContents
-  case parse $ ModuleSource Nothing src of
-    Left e -> error e
-    Right ast -> do
-      let m = stageModule standardCMS ast
+  let ast = unwrap $ parse $ ModuleSource Nothing src
+  let m = unwrap $ stageModule standardCMS ast
+  let m' = unwrap $ stepModule m
+  let m'' = unwrap $ stepModule m'
+  print m''
+  where unwrap (Left x) = error $ show x
+        unwrap (Right x) = x
+{-
       case m of
         Left e -> print e
-        Right r@(ReducingModuleState SS { ssIN = in_ } _ (Reducing Module { fs })) ->
+        Right r@(ReducingModuleState SS { ssIN = in_ }
+                                     _ (Reducing Module { fs })) ->
           let fs' = M.map mm fs
               mm (Unresolved n) = convExprAST in_ n
               mm x = error (show x) in
           print (fs, fs')
+-}
 
 -- main = getContents >>= printTokens
 
