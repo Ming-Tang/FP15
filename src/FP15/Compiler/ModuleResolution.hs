@@ -1,7 +1,6 @@
 module FP15.Compiler.ModuleResolution where
 import Control.Applicative((<$>))
 import qualified Data.Map.Strict as M
-import Data.Map.Strict(Map)
 import System.Directory(doesFileExist)
 import System.FilePath.Posix(joinPath, (</>))
 import FP15.Types
