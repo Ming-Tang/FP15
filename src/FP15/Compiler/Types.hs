@@ -155,6 +155,17 @@ data ReducingModuleState
                         , rmsRM :: ReducingModule }
   deriving (Eq, Ord, Show, Read)
 
+-- | An 'ExprState' represents an expression in various stages of the reduction
+-- stage.
+--
+-- TODO error states.
+data ExprState = Unresolved ExprAST
+               | Unlifted BExpr
+               | Unreduced Expr
+               | Reduced Expr
+               deriving (Eq, Ord, Show, Read)
+
+
 -- * Compiled
 
 -- | A 'CompiledModule' represents a module with functions in compiled state.

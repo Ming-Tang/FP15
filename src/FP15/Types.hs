@@ -259,16 +259,6 @@ deriving instance Ord ExprAST
 deriving instance Show ExprAST
 deriving instance Read ExprAST
 
--- | An 'ExprState' represents an expression in various stages of the reduction
--- stage.
---
--- TODO error states.
-data ExprState = Unresolved ExprAST
-               | Unlifted BExpr
-               | Unreduced Expr
-               | Reduced Expr
-               deriving (Eq, Ord, Show, Read)
-
 -- TODO types for derived functionals
 
 -- * Compilation

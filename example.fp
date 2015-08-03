@@ -12,7 +12,7 @@ fac = (< 1) : 1 | (* {(-1) fac})
 fac1 = [_, 1] < : 1 | [_, pred fac] *
 fac2 = (If (Compose (Fork _ 1) <)
            1
-           (Compose (Fork _ (Compose pred fac)) <))
+           (Compose (Fork _ (Compose pred fac)) *))
 
 avg = (sum % len)
 -- TODO duplicate definitions are not reported
