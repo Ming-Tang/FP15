@@ -1,4 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
+-- | Module for reducing expressins from 'ExprAST' to 'BExpr'.
 module FP15.Compiler.Reduction.BExpr where
 import Control.Monad.Error
 import Control.Monad.Trans.Reader
@@ -18,8 +19,8 @@ type BResult e a = ReaderT e (Either BError) a
 type FTree = Tree (ResolvedOp F) ExprAST
 type FlTree = Tree (ResolvedOp Fl) ExprAST
 
--- | An error that can occur while converting an 'ExprAST' into
--- a 'BExpr'.
+-- | A 'BError' is an error that can occur while converting an 'ExprAST' into a
+-- 'BExpr'.
 data BError
   -- | Generic error with message and maybe the location of error.
   = ErrorMsg !String !(Maybe ExprAST)

@@ -9,7 +9,6 @@ import Data.List(intercalate)
 #endif
 
 -- * Type Synonyms
-
 -- Short identifiers are needed because of 80-char line length limit.
 
 -- | A strict map.
@@ -18,7 +17,7 @@ type Map k v = M.Map k v
 -- | A strict set.
 type Set e = Map e ()
 
--- | A non-empty list
+-- | A non-empty list.
 type NE a = NE.NonEmpty a
 
 -- * Names
@@ -149,11 +148,19 @@ type LocId a = Located (Id a)
 type LocName a = Located (Name a)
 
 -- * Type Tags
+-- These empty datatypes are for tagging name types, to prevent programming
+-- mistakes of passing a function name into a place where a functional name is
+-- required.
 
+-- | Function.
 data F
+-- | Functional.
 data Fl
+-- | Function operator.
 data FOp
+-- | Functional operator.
 data FlOp
+-- | Either function or functional operator.
 data Unknown
 
 deriving instance Eq F
@@ -194,7 +201,6 @@ type FOpName = Name FOp
 type FlOpName = Name FlOp
 
 type UnknownName = Name Unknown
-
 
 type FFixity = Fixity F
 type FlFixity = Fixity Fl
@@ -253,6 +259,10 @@ deriving instance Ord ExprAST
 deriving instance Show ExprAST
 deriving instance Read ExprAST
 
+-- | An 'ExprState' represents an expression in various stages of the reduction
+-- stage.
+--
+-- TODO error states.
 data ExprState = Unresolved ExprAST
                | Unlifted BExpr
                | Unreduced Expr
@@ -267,28 +277,22 @@ data ModuleSource = ModuleSource { moduleFile :: !(Maybe String)
                                  , moduleSource :: !String }
                   deriving (Eq, Ord, Show, Read)
 
-data ModuleResolutionResult
-  = ModuleResolution { resolutionErrors :: Map ModuleName ModuleResolutionError
-                     , resolvedModuleASTs :: Map ModuleName ModuleAST }
-  deriving (Eq, Ord, Show, Read)
-
 data ModuleResolutionError = ModuleNotFound
                            | ParseError String
                            deriving (Eq, Ord, Show, Read)
 
-data PreparationError = ImportCycle { modulesInCycle :: [ModuleName] }
-                      | UndefinedReference
+-- * Custom Operators
 
--- * Custom operators
+-- | An operator precedence is a pair of 'Int's, ordered by the first element,
+-- then by the second element.
 type Prec = (Int, Int)
 
 data OperatorType = Prefix | LeftAssoc | RightAssoc | VarAssoc
                   deriving (Eq, Ord, Show, Read)
 
+-- | Fixity declaration.
 data Fixity a = Fixity OperatorType Prec (Name a)
               deriving (Eq, Ord, Show, Read)
-
-type FixityDecls = ([Fixity F], [Fixity Fl])
 
 type LocFixity a = Located (Fixity a)
 
@@ -298,6 +302,7 @@ type FunctionalAST = ()
 
 type FunctionalDefinition = ()
 
+-- | TODO finish these
 data ImpId = A
            deriving (Eq, Ord, Show, Read)
 data ImpRename = B
