@@ -10,7 +10,7 @@ module FP15.Compiler.Reduction (
 , convExprAST
 
 -- * @BExpr -> Expr@
-, convBExpr
+, liftBExpr
 
 -- * @Expr@
 , resolveExpr
@@ -19,11 +19,17 @@ import FP15.Compiler.Reduction.BExpr
 import FP15.Types(BExpr(..), Expr(..))
 import Control.Applicative((<$>))
 
-convBExpr :: BExpr -> Either a Expr
-convBExpr (BConst x) = return $ Const x
-convBExpr (BApp f xs) = App f <$> mapM convBExpr xs
-convBExpr (BFunc f) = return $ Func f
-convBExpr (BLet _ _) = error "convBExpr: BLet"
+-- | The 'liftBExpr' function converts an 'BExpr' to an 'Expr' and a set of
+-- lifted declarations.
+liftBExpr :: BExpr -> Either a Expr
+liftBExpr (BConst x) = return $ Const x
+liftBExpr (BApp f xs) = App f <$> mapM liftBExpr xs
+liftBExpr (BFunc f) = return $ Func f
+liftBExpr (BLet _ _) = error "liftBExpr: BLet"
 
+-- | The 'resolveExpr' function resolves all names inside an 'Expr' to
+-- fully-qualified names.
 resolveExpr :: Expr -> Either a Expr
-resolveExpr e = undefined
+resolveExpr (Const x) = return $ Const x
+resolveExpr (App f xs) = App f <$> mapM resolveExpr xs
+resolveExpr (Func f) = return $ Func f

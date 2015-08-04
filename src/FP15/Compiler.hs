@@ -47,6 +47,9 @@ getSourceMapping ModuleAST { astFs, astFls, astFFixes, astFlFixes }
   convLocId :: (LocId i, x) -> Maybe (Id i, SrcPos)
   convLocId (Loc s i, _) = fmap (\s' -> (i, s')) s
 
+-- | The 'resolveImports' function resolves import declarations into a mapping
+-- of imported symbol to absolute symbol, given a 'CompiledModuleSet' and an
+-- 'ImportList'.
 resolveImports :: CompiledModuleSet -> ImportList
               -> Either (Located ImportError) ImportedNames
 resolveImports cms = foldM addImportL $ Imported MB.empty where
@@ -78,6 +81,8 @@ resolveImports cms = foldM addImportL $ Imported MB.empty where
   makeErrLocated l (Right x) = Right x
   makeErrLocated l (Left e) = Left (Loc l e)
 
+-- | The 'getModuleInterface' function determines a module's public interface
+-- given a 'ModuleAST'.
 getModuleInterface :: ModuleAST -> ModuleInterface
 getModuleInterface ModuleAST { astFs, astFls
                              , astFFixes, astFlFixes
@@ -93,7 +98,7 @@ getModuleInterface ModuleAST { astFs, astFls
     cu = const ()
     -- TODO check for presence of Export
 
--- | Perform one reduction step in the module.
+-- | The 'stepModule' function performs one reduction step of a module.
 stepModule :: ReducingModuleState -> Either [String] ReducingModuleState
 stepModule r@(ReducingModuleState ss@SS { ssIN }
                                   rt (Reducing rm@Module { fs })) =
@@ -105,7 +110,7 @@ stepModule r@(ReducingModuleState ss@SS { ssIN }
   es = map show $ lefts $ map snd $ M.toList fs'
   us = M.map fromRight fs'
   mm (Unresolved x) = Unlifted <$> convExprAST ssIN x
-  mm (Unlifted x) = Unreduced <$> convBExpr x
+  mm (Unlifted x) = Unreduced <$> liftBExpr x
   mm x = return x
   fromRight (Right x) = x
   fromRight (Left _) = error "fromRight: Left."
