@@ -1,5 +1,6 @@
 module FP15.Standard where
 import qualified Data.Map.Strict as M
+import FP15.Value
 import FP15.Types
 import FP15.Compiler.Types
 
@@ -101,11 +102,14 @@ stdMI = ModuleInterface Module {
 
 stdCompiledModule :: CompiledModule
 stdCompiledModule = Compiled Module {
-                      fs = M.empty
-                    , fls = M.empty
+                      fs = M.fromList $ map mkF stdFs
+                    , fls = M.fromList $ map mkFl stdFls
                     , fFixes = M.fromList stdFFixes
                     , flFixes = M.fromList stdFlFixes
-                    }
+                    } where
+  mkF :: Id F -> (Id F, Expr)
+  mkF x@(Id i) = (x, App (noLoc $ stdName "BaseF") [Const $ String i])
+  mkFl x = (x, ())
 
 stdModuleItem :: CompiledModuleItem
 stdModuleItem = CompiledModuleItem stdCompiledModule stdMI Nothing
