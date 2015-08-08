@@ -317,10 +317,12 @@ type ExportList = [Located ImpId]
 
 -- ** AST
 
-data ModuleAST = ModuleAST { astFs :: Map (LocId F) ExprAST
+data ModuleAST = ModuleAST { astMN :: ModuleName
+                           , astImps :: ImportList
+                           , astExps :: ExportList
+                           , astFs :: Map (LocId F) ExprAST
                            , astFls :: Map (LocId Fl) FunctionalAST
                            , astFFixes :: Map (LocId FOp) FFixity
                            , astFlFixes :: Map (LocId FlOp) FlFixity
-                           , astImps :: ImportList
-                           , astExps :: ExportList }
+                           }
                deriving (Eq, Ord, Show, Read)

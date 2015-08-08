@@ -47,7 +47,14 @@ indexer { Token (Indexer $$) _ _ }
 
 %%
 
-prog : binding_list eof { ModuleAST (M.fromList $1) M.empty M.empty M.empty [] [] }
+prog : binding_list eof { ModuleAST { astMN = (M ["Main"])
+                                    , astFs = (M.fromList $1)
+                                    , astFls = M.empty
+                                    , astFFixes = M.empty
+                                    , astFlFixes = M.empty
+                                    , astImps = []
+                                    , astExps = []
+                                    } }
 
 binding_list : binding { [$1] }
              | binding_list ";" binding { $1 ++ [$3] }

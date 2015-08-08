@@ -55,9 +55,6 @@ data BError
                                           (FlTree, ResolvedOp Fl)))
   deriving (Eq, Ord, Show, Read)
 
-instance Error BError where
-  strMsg s = ErrorMsg s Nothing
-
 -- | An 'ResolvedOp' represents an operator (with location of mention) that has
 -- been successfully resolved to an identifier.
 data ResolvedOp f = ResolvedOp { getOp :: !(LocName Unknown)

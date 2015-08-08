@@ -5,6 +5,7 @@
 -- initial module and its dependencies. The fully-reduced forms are ready to be
 -- processed by interpreters or code generators.
 module FP15.Compiler where
+import Data.List(intercalate)
 import Data.Either
 import Control.Monad.Error
 import Control.Applicative
@@ -12,25 +13,28 @@ import qualified Data.Map.Strict as M
 import Data.Maybe(mapMaybe)
 import FP15.Types
 import FP15.Compiler.Types
-import FP15.Compiler.Errors
 import FP15.Compiler.Reduction
 import qualified FP15.Compiler.ModuleBody as MB
 import qualified FP15.Compiler.ImportedNames as IN
 --import FP15.Compiler.ModuleResolution()
 --import FP15.Compiler.CompiledModuleSet()
 
+data ImportError = CannotImport ModuleName
+                 | NameNotInModule String
+                 deriving (Eq, Ord, Show, Read)
+
 -- | Given module AST, resolve their names and operators
 stageModule :: CompiledModuleSet -> ModuleAST
                -> Either (Located ImportError) ReducingModuleState
-stageModule cms mast@ModuleAST { astFs = aFs, astFls = aFls
-                               , astFFixes = aFFxs, astFlFixes = aFLFxs
-                               , astImps = aImps, astExps = aExps } = do
-  iN <- resolveImports cms $ addImplicitPrelude aImps
-  let ss = SS { ssCMS = cms, ssMI = mi, ssSM = Just sm, ssIN = iN }
+stageModule cms mast@ModuleAST { astMN, astFs, astFls
+                               , astFFixes, astFlFixes
+                               , astImps , astExps } = do
+  iN <- resolveImports cms $ addImplicitPrelude astImps
+  let ss = SS { ssCMS = cms, ssMN = astMN, ssMI = mi, ssSM = Just sm, ssIN = iN }
       rmod = Reducing Module { fs = mfs, fls = mfls
                              , fFixes = M.empty, flFixes = M.empty }
-      mfs = M.map Unresolved $ M.mapKeys getLocated aFs
-      mfls = M.mapKeys getLocated aFls
+      mfs = M.map Unresolved $ M.mapKeys getLocated astFs
+      mfls = M.mapKeys getLocated astFls
       mi = getModuleInterface mast
       sm = getSourceMapping mast
   return $ ReducingModuleState ss Normal rmod
@@ -99,21 +103,35 @@ getModuleInterface ModuleAST { astFs, astFls
     -- TODO check for presence of Export
 
 -- | The 'stepModule' function performs one reduction step of a module.
-stepModule :: ReducingModuleState -> Either [String] ReducingModuleState
-stepModule r@(ReducingModuleState ss@SS { ssIN }
-                                  rt (Reducing rm@Module { fs })) =
+stepModule :: ReducingModuleState -> Either String ReducingModuleState
+stepModule r@(ReducingModuleState ss rt (Reducing rm@Module { fs })) =
   case es of
-    [] -> return (ReducingModuleState ss rt (Reducing rm { fs = us }))
-    _ -> throwError es
+    [] -> return (ReducingModuleState ss rt' (Reducing rm { fs = us }))
+    _ -> throwError $ intercalate "\n" $ map (\(a, b) -> show a ++ ": " ++ fromLeft b) es
   where
-  fs' = M.map mm fs
-  es = map show $ lefts $ map snd $ M.toList fs'
-  us = M.map fromRight fs'
-  mm (Unresolved x) = Unlifted <$> convExprAST ssIN x
-  mm (Unlifted x) = Unreduced <$> liftBExpr x
-  mm x = return x
-  fromRight (Right x) = x
-  fromRight (Left _) = error "fromRight: Left."
+    fs' = M.map mm fs
+    us = M.map fromRight fs'
+    es = filter (\(_, x) -> isLeft x) $ M.toList fs'
+
+    ff = M.foldr (\a b -> case a of Reduced _ -> b
+                                    _ -> False) True us
+    rt' = if ff then Finished else rt
+
+    mm :: ExprState -> Either String ExprState
+    mm (Unresolved x) = ce $ Unlifted <$> convExprAST ss x
+    mm (Unlifted x) = ce $ Unreduced <$> liftBExpr x
+    mm (Unreduced x) = ce $ Reduced <$> resolveExpr ss x
+    mm x = return x
+
+    ce :: Show a => Either a b -> Either String b
+    ce (Left x) = Left $ show x
+    ce (Right y) = Right y
+
+    fromRight (Right x) = x
+    fromRight (Left _) = error "fromRight"
+
+    fromLeft (Left x) = x
+    fromLeft (Right _) = error "fromLeft"
 
 -- | Given a 'ReducingModuleState', convert it to an 'CompiledModuleItem'.
 --

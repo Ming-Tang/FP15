@@ -11,8 +11,13 @@ stdFls :: [Id Fl]
 stdFFixes :: [(Id FOp, Fixity F)]
 stdFlFixes :: [(Id FlOp, Fixity Fl)]
 
-stdFs = map Id ["_", "succ", "pred", "isEven", "isOdd"]
-stdFls = map Id ["Compose", "If", "Fork", "Pass"]
+stdFs = map Id [ "_", "cons", "len"
+               , "succ", "pred", "isEven", "isOdd"
+               , "eq", "ne", "le", "ge", "lt", "gt"
+               , "add", "sub", "mul", "div", "sum", "prod"]
+
+stdFls = map Id ["Compose", "If", "Fork", "Pass", "Map", "Filter"]
+
 stdFFixes = map (\(o, p, a, f) -> (Id o, Fixity a p (stdName f))) [
    ("&.", (0, 0), LeftAssoc, "apply")
   , ("++", (0, 0), VarAssoc, "append")
