@@ -22,6 +22,7 @@ data StackFrame = StackFrame { location :: Maybe SourceLocation
                 deriving (Eq, Ord, Read)
 newtype StackTrace = StackTrace [StackFrame]
 
+emptyStackTrace :: StackTrace
 emptyStackTrace = StackTrace []
 
 -- | An FP15 runtime error.
@@ -68,8 +69,10 @@ instance Show RuntimeError where
   show (ErrorMessage s st) =
     joinLines ["Error: " ++ s, show st]
 
+joinLines :: [String] -> String
 joinLines = intercalate "\n"
 
+-- TODO use continuation-based monad
 type ResultOf = Either RuntimeError
 type Result = Either RuntimeError Value
 

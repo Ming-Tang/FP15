@@ -1,5 +1,7 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, DeriveGeneric #-}
 module FP15.Value where
+import GHC.Generics
+import Control.DeepSeq
 
 data Value = Bool Bool
            | Char Char
@@ -8,7 +10,9 @@ data Value = Bool Bool
            | Symbol String
            | String String
            | List [Value]
-            deriving (Eq, Ord, Show, Read)
+            deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData Value
 
 class Eq t => ValueConvertible t where
   toValue :: t -> Value
