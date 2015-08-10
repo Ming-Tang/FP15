@@ -33,6 +33,7 @@ eof { Token EOF _ _ }
 
 function { (viewFunction -> Just $$) }
 functional { (viewFunctional -> Just $$) }
+-- TODO fix the parsing of =
 operator { (viewOperator -> Just $$) }
 dotOperator { (viewDotOperator -> Just $$) }
 

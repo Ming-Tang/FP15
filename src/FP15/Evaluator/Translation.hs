@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances, DeriveGeneric #-}
 {-# LANGUAGE BangPatterns, ViewPatterns #-}
 module FP15.Evaluator.Translation where
-import GHC.Generics
 import Prelude hiding (lookup)
 import Control.Monad
 import Control.DeepSeq
@@ -13,19 +12,6 @@ import FP15.Evaluator.Types
 import FP15.Evaluator.Error
 import FP15.Evaluator.Standard
 import FP15.Evaluator.Contract
-
-type Ident = String
-data BaseExpr = Const Value
-              | Func Ident
-              | Compose [BaseExpr]
-              | If BaseExpr BaseExpr BaseExpr
-              | Fork [BaseExpr]
-              | Pass [BaseExpr]
-              | Map BaseExpr
-              | Filter BaseExpr
-              deriving (Eq, Show, Read, Generic)
-
-instance NFData BaseExpr
 
 -- | The 'transMap' function translates a map of identifiers by name to a map of
 -- functions. Notice the map is self-referential therefore 'Data.Map.Strict.Map'
@@ -58,10 +44,19 @@ trans e (If p f g) = markFunc "If" . \(force -> x) ->
      where (p', f', g') = (trans e p, trans e f, trans e g)
 
 trans e (Fork fs) = evalFork $ map (trans e) fs
-trans e (Pass fs) = evalPass $ map (trans e) fs
+trans e (Hook fs) = evalHook $ map (trans e) fs
 
 trans e (Map f) = evalMap $ trans e f
 trans e (Filter p) = evalFilter $ trans e p
+
+trans e (While p f) = markFunc "While" . body where
+  body (force -> x) = do
+    b <- predOnly p' x
+    if b then f' x >>= body
+    else return x
+  (p', f') = (trans e p, trans e f)
+
+trans e (Mark k x) = markFunc k . trans e x
 
 -- Evaluation helper functions
 
@@ -69,12 +64,12 @@ listApply :: ([Value] -> ResultOf [Value]) -> Value -> ResultOf Value
 listApply f (force -> x) = liftM List $ f =<< (ensure listAnyC x)
 
 evalFork :: [Func] -> Func
-evalPass :: [Func] -> Func
+evalHook :: [Func] -> Func
 evalMap :: Func -> Func
 evalFilter :: Func -> Func
 
 evalFork fs (force -> x) = markFunc "Fork" $ liftM List $ mapM ($ x) fs
-evalPass fs = markFunc "Pass" . listApply pass
+evalHook fs = markFunc "Hook" . listApply pass
   where pass xs = if length xs == length fs
                   then zipWithM ($) fs $!! xs
                   else raisePassMismatchError (length xs) (length fs)

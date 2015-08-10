@@ -1,19 +1,23 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Main where
-import qualified Data.Map as M()
+import qualified Data.Map as M
+import Data.Map((!))
 import FP15.Parsing()
 import FP15.Parsing.Types
 import FP15.Parsing.Lexer(scanTokens)
 import FP15.Parsing.Parser(parse)
-import FP15.Value()
+import FP15.Value
 import FP15.Types hiding (Const, Func)
 import FP15.Evaluator()
 import FP15.Evaluator.Contract()
 import FP15.Compiler
-import FP15.Compiler.Types()
+import FP15.Compiler.Types
+import FP15.Compiler.CompiledModuleSet
 import FP15.Compiler.Precedence()
 import FP15.Compiler.Reduction()
 import FP15.Standard(standardCMS)
+import FP15.Evaluator.Standard(standardEnv)
+import FP15.Evaluator.Translation(transMap)
 
 main :: IO ()
 {-
@@ -73,11 +77,14 @@ main = do
   src <- getContents
   let ast = unwrap $ parse $ ModuleSource Nothing src
   let m = unwrap' $ stageModule standardCMS ast
-  let m' = unwrap $ stepModule m
-  let m'' = unwrap $ stepModule m'
-  let m''' = unwrap $ stepModule m''
-  let m'''' = unwrap $ stepModule m'''
-  print m''''
+  let m' = until ((==) Finished . rmsTag) (unwrap . stepModule) m
+  let c = makeCompiledModule m'
+  let cms' = addModule (ssMN $ rmsSS m') c standardCMS
+  let fl = unwrap' $ translateCMS cms'
+  print fl
+  let s = transMap standardEnv fl
+  print (M.keys s)
+  print $ (s ! "Main.main") (List [])
   where unwrap (Left x) = error x
         unwrap (Right x) = x
         unwrap' (Left x) = error (show x)

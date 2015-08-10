@@ -1,12 +1,22 @@
-{-# LANGUAGE CPP, EmptyDataDecls, StandaloneDeriving, DeriveFunctor #-}
+{-# LANGUAGE EmptyDataDecls, StandaloneDeriving, DeriveFunctor,
+    DefaultSignatures #-}
 module FP15.Types where
-#define SPECIAL_SHOW 1
 import FP15.Value(Value)
 import qualified Data.Map.Strict as M
 import qualified Data.List.NonEmpty as NE
-#if SPECIAL_SHOW
 import Data.List(intercalate)
-#endif
+
+-- * The Disp Typeclass
+
+-- | The 'Disp' typeclass is for converting a value to string. The difference
+-- betwen 'Disp' and 'Show' is that 'Show' is made to be parseable by 'Read' and
+-- 'Disp' is for user-friendly representation. Error types use 'Disp' to
+-- generate user-readable error messages.
+class Disp a where
+  disp :: a -> String
+
+  default disp :: Show a => a -> String
+  disp = show
 
 -- * Type Synonyms
 -- Short identifiers are needed because of 80-char line length limit.
@@ -28,14 +38,7 @@ newtype Id a = Id String
 
 -- | An FP15 module name.
 newtype ModuleName = M [String]
-#if SPECIAL_SHOW
-            deriving (Eq, Ord, Read)
-
-instance Show ModuleName where
-  show (M m) = show $ intercalate "." m
-#else
-            deriving (Eq, Ord, Show, Read)
-#endif
+                   deriving (Eq, Ord, Show, Read)
 
 getId :: Id a -> String
 getModuleName :: ModuleName -> [String]
@@ -45,18 +48,20 @@ getModuleName (M n) = n
 
 -- | A fully-qualified name
 data Name a = N ![String] !String
-#if SPECIAL_SHOW
-            deriving (Eq, Ord, Read)
-
-instance Show (Name a) where
-  show (N [] x) = show x
-  show (N m x) = show (intercalate "." $ m ++ [x])
-#else
             deriving (Eq, Ord, Show, Read)
-#endif
 
 convName :: Name a -> Name b
 convName (N a b) = N a b
+
+instance Disp (Id a) where
+  disp = getId
+
+instance Disp ModuleName where
+  disp = intercalate "." . getModuleName
+
+instance Disp (Name a) where
+  disp (N [] x) = x
+  disp (N ns x) = intercalate "." ns ++ "." ++ x
 
 -- * Bound Names
 
@@ -121,16 +126,21 @@ data SrcPos = SrcPos { position :: !Int
                      , file :: !(Maybe String) }
             deriving (Eq, Ord, Show, Read)
 
+instance Disp SrcPos where
+  -- file:12:3
+  disp (SrcPos p l c (Just f)) = f ++ ":" ++ show l ++ ":" ++ show c
+  -- <unknown>:12:3
+  disp (SrcPos p l c Nothing) = "<unknown>:" ++ show l ++ ":" ++ show c
+
 -- | A value with optional location information attached.
 data Located a = Loc !(Maybe SrcPos) a
-#if SPECIAL_SHOW
-               deriving (Eq, Ord, Read, Functor)
-
-instance Show a => Show (Located a) where
-  show (Loc _ a) = show a
-#else
                deriving (Eq, Ord, Show, Read, Functor)
-#endif
+
+instance Disp a => Disp (Located a) where
+  -- abc
+  disp (Loc Nothing a) = disp a
+  -- abc@file:12:3
+  disp (Loc (Just l) a) = disp a ++ "@" ++ disp l
 
 getSrcPos :: Located a -> Maybe SrcPos
 getLocated :: Located a -> a
@@ -225,16 +235,7 @@ data BExpr = BConst Value
 
 deriving instance Eq BExpr
 deriving instance Ord BExpr
-#if SPECIAL_SHOW
-instance Show BExpr where
-  show (BConst v) = "(BConst " ++ show v ++ ")"
-  show (BApp f xs) = "(BApp " ++ show f ++ " " ++ unwords (map show xs) ++ ")"
-  show (BFunc f) = "(BFunc " ++ show f ++ ")"
-  show (BLet bs x) = "(BLet " ++ show bs ++ " " ++ show x ++ ")"
-
-#else
 deriving instance Show BExpr
-#endif
 deriving instance Read BExpr
 
 -- | An FP15 expression as seen by the parser.
@@ -247,7 +248,7 @@ data ExprAST = TValue Value
 
              | TIf ExprAST ExprAST ExprAST
              | TFork [ExprAST]
-             | TPass [ExprAST]
+             | THook [ExprAST]
 
              | TUnresolvedPrimaryList [ExprAST]
              | TUnresolvedInfixNotation [ExprAST]

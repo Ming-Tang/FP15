@@ -9,7 +9,7 @@ empty = CompiledModuleSet M.empty
 
 lookupCompiledModule :: CompiledModuleSet -> ModuleName
                         -> Maybe CompiledModuleItem
-lookupCompiledModule m n = M.lookup n (getModuleSet m)
+lookupCompiledModule (CompiledModuleSet m) n = M.lookup n m
 
 lookupModule :: CompiledModuleSet -> ModuleName -> Maybe CompiledModule
 lookupModuleInterface :: CompiledModuleSet -> ModuleName

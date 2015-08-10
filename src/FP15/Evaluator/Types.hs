@@ -1,11 +1,30 @@
 {-# LANGUAGE GADTs, RankNTypes, ExistentialQuantification, ImpredicativeTypes,
-             StandaloneDeriving, FlexibleInstances #-}
+             StandaloneDeriving, FlexibleInstances, DeriveGeneric #-}
 module FP15.Evaluator.Types where
+import GHC.Generics
+import Control.DeepSeq
 import Control.Monad.Error
 import Data.List(intercalate)
 import Data.Maybe(fromMaybe)
 import Data.These(These(..))
 import FP15.Value
+
+-- * Expression
+
+type Ident = String
+data BaseExpr = Const Value
+              | Func Ident
+              | Compose [BaseExpr]
+              | If BaseExpr BaseExpr BaseExpr
+              | Fork [BaseExpr]
+              | Hook [BaseExpr]
+              | Map BaseExpr
+              | Filter BaseExpr
+              | While BaseExpr BaseExpr
+              | Mark String BaseExpr
+              deriving (Eq, Show, Read, Generic)
+
+instance NFData BaseExpr
 
 -- * Error and Diagnostics
 

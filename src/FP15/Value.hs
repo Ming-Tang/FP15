@@ -29,6 +29,9 @@ instance ValueConvertible Char where
 instance ValueConvertible Integer where
   toValue = Int
 
+instance ValueConvertible Int where
+  toValue = Int . fromIntegral
+
 instance ValueConvertible Float where
   toValue = Real
 

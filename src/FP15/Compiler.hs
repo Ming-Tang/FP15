@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns, ViewPatterns #-}
 -- | The @FP15.Compiler@ module contains logic for compiling FP15 programs.
 -- The compilation of an FP15 program starts at the source code of the initial
 -- module, and ends with the fully-reduced forms of all functions in the
@@ -14,6 +14,8 @@ import Data.Maybe(mapMaybe)
 import FP15.Types
 import FP15.Compiler.Types
 import FP15.Compiler.Reduction
+import FP15.Evaluator.Types(BaseExpr)
+import qualified FP15.Evaluator.Types as E
 import qualified FP15.Compiler.ModuleBody as MB
 import qualified FP15.Compiler.ImportedNames as IN
 --import FP15.Compiler.ModuleResolution()
@@ -150,3 +152,19 @@ makeCompiledModule (ReducingModuleState SS { ssMI = mi, ssSM = sm }
   gRE _ = error "makeCompiledModule: An expr is not reduced."
   chkFinished = if tg == Finished then ()
                 else error "makeCompiledModule: Module is not reduced."
+
+translateCMS :: CompiledModuleSet -> Either (Map E.Ident BaseExprError)
+                                            (Map E.Ident BaseExpr)
+translateCMS (flattenCMS -> fd)
+  = if M.null es then Right bs
+    else Left es where
+  m = M.mapKeys disp $ M.mapWithKey (\k e -> E.Mark (disp k) <$> e) $ M.map toBaseExpr fd
+  (M.fromList -> es0, M.fromList -> bs) = partitionEithers $ map h $ M.toList m
+  h (a, Left x) = Left (a, x)
+  h (a, Right x) = Right (a, x)
+  es = M.filter (/= BaseF) es0
+
+flattenCMS :: CompiledModuleSet -> Map FName Expr
+flattenCMS (CompiledModuleSet m) = M.fromList $ concatMap f $ M.toList m where
+  f (M mn, CompiledModuleItem { cmiCM = Compiled Module { fs } })
+    = map (\(Id x, e) -> (N mn x, e)) $ M.toList fs

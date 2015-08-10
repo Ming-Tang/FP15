@@ -4,9 +4,10 @@ module FP15.Compiler.Reduction.BExpr where
 import Control.Monad.Error
 import Control.Monad.Trans.Reader
 import Control.Applicative
+import FP15.Value
 import FP15.Types
 import FP15.Compiler.Types
-import FP15.Value
+import FP15.Standard(stdName)
 import FP15.Compiler.Precedence
 
 infixl 6 |>
@@ -82,7 +83,7 @@ toBE (TIndex i) = base "Index" <*> pure [BConst $ Int 1]
 
 toBE (TIf p a b) = base "If" <*> mapM toBE [p, a, b]
 toBE (TFork es) = base "Fork" <*> mapM toBE es
-toBE (TPass es) = base "Pass" <*> mapM toBE es
+toBE (THook es) = base "Hook" <*> mapM toBE es
 
 toBE (TUnresolvedPrimaryList ps) =
   toPrecNodesFl ps
@@ -178,20 +179,20 @@ lookupOpOnly o = do
 -- * Primitive Symbols
 
 base :: Monad m => String -> m ([BExpr] -> BExpr)
-base = return . BApp . baseName
+base = return . BApp . stdNameL
 
-baseName :: String -> LocName f
-baseName = Loc Nothing . N ["Std"]
+stdNameL :: String -> LocName f
+stdNameL = Loc Nothing . stdName
 
 pId :: BExpr
-pId = BFunc $ baseName "_"
+pId = BFunc $ stdNameL "_"
 
 boCompose :: LocName Unknown
-boCompose = baseName ""
+boCompose = stdNameL ""
 
 bnCompose, bnFork :: LocName Fl
-bnCompose = baseName "Compose"
-bnFork = baseName "Fork"
+bnCompose = stdNameL "Compose"
+bnFork = stdNameL "Fork"
 
 bFork :: [BExpr] -> BExpr
 bFork = BApp bnFork

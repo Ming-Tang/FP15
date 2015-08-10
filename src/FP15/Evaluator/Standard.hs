@@ -71,8 +71,9 @@ eqFunc :: Value -> Func
 checkFunc c = return . Bool . isJust . validate c
 eqFunc x = return . Bool . (==) x
 
+standardEnv :: M.Map String Func
 standardEnv =
-  M.fromList [
+  M.fromList $ map (\(n, f) -> ("Std." ++ n, f)) [
     ("_", return)
 
   , ("succ", func (`add` IntN 1))
@@ -84,21 +85,26 @@ standardEnv =
   , ("sub", func $ subLike sub)
   , ("mul", foldN mul (IntN 1))
   , ("div", func $ subLike div)
+
+  , ("sum", foldN add (IntN 0))
+  , ("prod", foldN mul (IntN 1))
+
   , ("sgn", func sgn)
   , ("abs", func absolute)
 
-  , (">", func2 greaterThan)
-  , ("<", func2 lessThan)
-  , (">=", func2 greaterEq)
-  , (">=", func2 lessEq)
+  , ("gt", func2 greaterThan)
+  , ("lt", func2 lessThan)
+  , ("ge", func2 greaterEq)
+  , ("le", func2 lessEq)
 
   , ("distl", func distl)
   , ("distr", func distl)
   , ("cons", func cons)
   , ("uncons", func uncons)
 
-  , ("equal", func2 ((==) :: Value -> Value -> Bool))
-  , ("notEqual", func2 ((/=) :: Value -> Value -> Bool))
+  -- TODO make comp functions variadic
+  , ("eq", func2 ((==) :: Value -> Value -> Bool))
+  , ("ne", func2 ((/=) :: Value -> Value -> Bool))
 
   , ("is0", func isZero)
   , ("isT", eqFunc $ Bool True)
@@ -117,4 +123,6 @@ standardEnv =
   , ("isList", checkFunc listAnyC)
   , ("isEmpty", checkFunc EmptyC)
   , ("isCons", checkFunc $ ConsC AnyC listAnyC)
+
+  , ("len", func (length :: [Value] -> Int))
   ] :: M.Map String Func

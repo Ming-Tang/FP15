@@ -25,3 +25,9 @@ dblPlusReci3 = ((*2) + (1%))
 dblPlusReci4 = ((_*2) + (1%_))
 dblPlusReci5 = [[_,2]*, [1,_]%] +
 
+main = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+       [[avg, avg1], @[fib, fib1, fib2, fib3],
+                     @[fac, fac1, fac2],
+                     @[dblPlusReci, dblPlusReci1, dblPlusReci2, dblPlusReci3,
+                       dblPlusReci4, dblPlusReci5]]
+

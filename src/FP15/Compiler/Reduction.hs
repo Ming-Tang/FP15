@@ -14,9 +14,15 @@ module FP15.Compiler.Reduction (
 
 -- * @Expr@
 , resolveExpr
+
+-- * @BaseExpr@
+, BaseExprError(..)
+, toBaseExpr
+
 ) where
 import FP15.Compiler.Reduction.BExpr
 import FP15.Compiler.Reduction.Resolution
+import FP15.Compiler.Reduction.BaseExpr
 import FP15.Types(BExpr(..), Expr(..))
 import Control.Applicative((<$>))
 
