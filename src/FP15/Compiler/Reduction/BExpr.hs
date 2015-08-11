@@ -1,6 +1,7 @@
 {-# LANGUAGE ViewPatterns #-}
 -- | Module for reducing expressins from 'ExprAST' to 'BExpr'.
 module FP15.Compiler.Reduction.BExpr where
+import Data.List.Split
 import Control.Monad.Error
 import Control.Monad.Trans.Reader
 import Control.Applicative
@@ -128,7 +129,17 @@ fromTreeFl (Inf x ro@(getLocResolvedId -> o) y)
 fromTreeFl (Var (getLocResolvedId -> o) xs) = BApp o <$> mapM fromTreeFl xs
 
 toPrecNodesF :: LookupOp e => [ExprAST] -> BResult e [PrecNode (ResolvedOp F) ExprAST]
-toPrecNodesF = mapM toPrecNodeF
+toPrecNodesF = mapM toPrecNodeF . splitPrecNodes
+splitPrecNodes :: [ExprAST] -> [ExprAST]
+splitPrecNodes = map process . split (dropInitBlank $ dropFinalBlank $ dropInnerBlanks $ whenElt isFOp) where
+  isFOp (TDotOperator _) = True
+  isFOp (TOperator _) = True
+  isFOp _ = False
+
+  process [] = error "splitPrecNodes: empty"
+  process [x] | isFOp x = x
+  process xs | any isFOp xs = error "toPrecNodesF': consecutive ops"
+             | otherwise = TUnresolvedPrimaryList xs
 
 toPrecNodeF :: LookupOp e => ExprAST -> BResult e (PrecNode (ResolvedOp F) ExprAST)
 toPrecNodeF (TDotOperator o)

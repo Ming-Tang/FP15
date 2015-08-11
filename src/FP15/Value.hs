@@ -6,7 +6,7 @@ import Control.DeepSeq
 data Value = Bool Bool
            | Char Char
            | Int Integer
-           | Real Float
+           | Real Double
            | Symbol String
            | String String
            | List [Value]
@@ -32,7 +32,7 @@ instance ValueConvertible Integer where
 instance ValueConvertible Int where
   toValue = Int . fromIntegral
 
-instance ValueConvertible Float where
+instance ValueConvertible Double where
   toValue = Real
 
 instance ValueConvertible String where

@@ -102,7 +102,7 @@ type Func = Value -> Result
 -- | The 'NumTower' type represents a position on the numerical tower.
 data NumTower = CharT | IntT | RealT deriving (Eq, Ord, Show, Read)
 -- | A number tagged by its position on the numerical tower.
-data Number = CharN Char | IntN Integer | RealN Float deriving (Eq, Show, Read)
+data Number = CharN Char | IntN Integer | RealN Double deriving (Eq, Show, Read)
 
 instance ValueConvertible Number where
   toValue (CharN i) = Char i
@@ -141,7 +141,7 @@ data Contract t where
 
   CharC :: Contract Char
   IntC :: Contract Integer
-  RealC :: Contract Float
+  RealC :: Contract Double
   NumberC :: Contract Number
 
   SymbolC :: Contract Sym
@@ -183,7 +183,7 @@ instance ContractConvertible Char where
 instance ContractConvertible Integer where
   asContract = IntC
 
-instance ContractConvertible Float where
+instance ContractConvertible Double where
   asContract = RealC
 
 instance ContractConvertible Number where

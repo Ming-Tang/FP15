@@ -18,7 +18,7 @@ data TokenData
   | TrueLiteral
   | CharLiteral !Char
   | IntLiteral !Integer
-  | RealLiteral !Float
+  | RealLiteral !Double
   | SymbolLiteral !String
   | StringLiteral !String
   | Indexer !Int

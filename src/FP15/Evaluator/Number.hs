@@ -1,5 +1,6 @@
 module FP15.Evaluator.Number where
 import Prelude hiding (div)
+import Prelude as P
 import Data.Char(ord)
 import FP15.Evaluator.Types
 
@@ -42,11 +43,11 @@ raiseTower a@(RealN _) RealT = a
 -- * Operator Creation
 
 numericBinOp' :: (Integer -> Integer -> a)
-                 -> (Float -> Float -> a)
+                 -> (Double -> Double -> a)
                  -> Number -> Number -> a
 
 numericBinOp :: (Integer -> Integer -> Integer)
-                -> (Float -> Float -> Float)
+                -> (Double -> Double -> Double)
                 -> Number -> Number -> Number
 
 coercePair a b =
@@ -71,6 +72,9 @@ numericBinOp' f g a b = let numPairC = Args2C NumberC NumberC in
 
 numericUnOp f g = numericUnOp' (IntN . f) (RealN . g)
 numericBinOp f g = numericBinOp' (ub IntN f) (ub RealN g) where ub = (.) (.) (.)
+numericRealUnOp f = numericUnOp' (RealN . f . fromIntegral) (RealN . f)
+numericBinRealOp f = numericBinOp' (\x y -> RealN $ f (fromIntegral x) (fromIntegral y))
+                                   (\x y -> RealN $ f x y)
 
 -- * Operations
 
@@ -85,10 +89,18 @@ sub = numericBinOp (-) (-)
 mul = numericBinOp (*) (*)
 div = numericBinOp quot (/)
 sgn = numericUnOp signum signum
-absolute = numericUnOp abs abs
+abs = numericUnOp P.abs P.abs
+neg = numericUnOp P.negate P.negate
 
 greaterThan = numericBinOp' (>) (>)
 lessThan = numericBinOp' (<) (<)
 greaterEq = numericBinOp' (>=) (>=)
 lessEq = numericBinOp' (<=) (<=)
+
+pow = numericBinOp (^) (**)
+
+sqrt = numericRealUnOp P.sqrt
+sin = numericRealUnOp P.sin
+cos = numericRealUnOp P.cos
+tan = numericRealUnOp P.tan
 

@@ -3,6 +3,7 @@ import qualified Data.Map.Strict as M
 import FP15.Value
 import FP15.Types
 import FP15.Compiler.Types
+import FP15.Evaluator.Standard(standardEnv')
 
 stdName :: String -> Name a
 stdName = N ["Std"]
@@ -12,10 +13,7 @@ stdFls :: [Id Fl]
 stdFFixes :: [(Id FOp, Fixity F)]
 stdFlFixes :: [(Id FlOp, Fixity Fl)]
 
-stdFs = map Id [ "_", "cons", "len"
-               , "succ", "pred", "isEven", "isOdd"
-               , "eq", "ne", "le", "ge", "lt", "gt"
-               , "add", "sub", "mul", "div", "sum", "prod"]
+stdFs = map Id $ M.keys standardEnv'
 
 stdFls = map Id ["Compose", "If", "Fork", "Pass", "Map", "Filter"]
 

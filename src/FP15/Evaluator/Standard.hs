@@ -8,7 +8,7 @@ import FP15.Value
 import FP15.Evaluator.Types
 import FP15.Evaluator.Error
 import FP15.Evaluator.Contract
-import FP15.Evaluator.Number
+import FP15.Evaluator.Number as N
 
 -- | The 'ensure' function validates a value against a contract, and returns the
 -- matched value, or else, raise a 'ContractViolation' error.
@@ -71,9 +71,10 @@ eqFunc :: Value -> Func
 checkFunc c = return . Bool . isJust . validate c
 eqFunc x = return . Bool . (==) x
 
-standardEnv :: M.Map String Func
-standardEnv =
-  M.fromList $ map (\(n, f) -> ("Std." ++ n, f)) [
+standardEnv', standardEnv :: M.Map String Func
+
+standardEnv = M.mapKeys (\n -> "Std." ++ n) standardEnv'
+standardEnv' = M.fromList [
     ("_", return)
 
   , ("succ", func (`add` IntN 1))
@@ -81,6 +82,7 @@ standardEnv =
   , ("isEven", func (even :: Integer -> Bool))
   , ("isOdd", func (odd :: Integer -> Bool))
 
+  , ("neg", func neg)
   , ("add", foldN add (IntN 0))
   , ("sub", func $ subLike sub)
   , ("mul", foldN mul (IntN 1))
@@ -88,14 +90,20 @@ standardEnv =
 
   , ("sum", foldN add (IntN 0))
   , ("prod", foldN mul (IntN 1))
+  , ("pow", func2 pow)
 
-  , ("sgn", func sgn)
-  , ("abs", func absolute)
+  , ("sqrt", func N.sqrt)
+  , ("sin", func N.sin)
+  , ("cos", func N.cos)
+  , ("tan", func N.tan)
 
-  , ("gt", func2 greaterThan)
-  , ("lt", func2 lessThan)
-  , ("ge", func2 greaterEq)
-  , ("le", func2 lessEq)
+  , ("sgn", func N.sgn)
+  , ("abs", func N.abs)
+
+  , ("gt", func2 N.greaterThan)
+  , ("lt", func2 N.lessThan)
+  , ("ge", func2 N.greaterEq)
+  , ("le", func2 N.lessEq)
 
   , ("distl", func distl)
   , ("distr", func distl)
