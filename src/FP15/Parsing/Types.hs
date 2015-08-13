@@ -36,6 +36,7 @@ data TokenData
   | Colon
   | Comma
   | Semicolon
+  | Hash
   deriving (Eq, Ord, Show, Read)
 
 data Token = Token !TokenData !SrcPos !String

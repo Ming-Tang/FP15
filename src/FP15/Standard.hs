@@ -15,7 +15,7 @@ stdFlFixes :: [(Id FlOp, Fixity Fl)]
 
 stdFs = map Id $ M.keys standardEnv'
 
-stdFls = map Id ["Compose", "If", "Fork", "Pass", "Map", "Filter"]
+stdFls = map Id ["Compose", "If", "Fork", "Hook", "Map", "Filter", "While"]
 
 stdFFixes = map (\(o, p, a, f) -> (Id o, Fixity a p (stdName f))) [
    ("&.", (0, 0), LeftAssoc, "apply")

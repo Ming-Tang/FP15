@@ -4,7 +4,7 @@ module FP15.Compiler.Reduction.BaseExpr (
 , toBaseExpr
 ) where
 import Control.Applicative hiding (Const)
-import FP15.Standard(stdName)
+import FP15.Standard(stdName, stdFls)
 import FP15.Evaluator.Types as E
 import FP15.Types hiding (Expr(..))
 import qualified FP15.Types as T
@@ -28,7 +28,7 @@ toBaseExpr (ta -> Just ("While", [p, f])) = While <$> p <*> f
 toBaseExpr (ta -> Just ("Filter", [f])) = Filter <$> f
 toBaseExpr (ta -> Just ("Map", [f])) = Map <$> f
 toBaseExpr (T.App f@(Loc _ nf) (length -> n)) =
-  if nf `elem` map stdName ["BaseF", "If", "Compose", "Fork", "Hook", "While", "Filter", "Map"] then
+  if nf `elem` map (stdName . getId) stdFls then
     Left (InvalidFlArity f n)
   else
     Left (InvalidFl f)

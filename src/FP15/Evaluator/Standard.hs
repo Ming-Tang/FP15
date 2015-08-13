@@ -43,6 +43,12 @@ func' c f x = liftM (toValue . f) (ensure c x)
 func = func' asContract
 func2 = func . uncurry
 
+funcE :: (ContractConvertible a, ValueConvertible b) => (a -> ResultOf b) -> Func
+funcE f v = do
+  x <- ensure asContract v
+  y <- f x
+  return $ toValue y
+
 ensureFunc a b f x = ensure a x >>= f >>= ensure b
 ensureIn = (`ensureFunc` AnyC)
 ensureOut = (AnyC `ensureFunc`)
@@ -70,6 +76,19 @@ eqFunc :: Value -> Func
 
 checkFunc c = return . Bool . isJust . validate c
 eqFunc x = return . Bool . (==) x
+
+index :: ([Value], Integer) -> ResultOf Value
+index (xs, i) = case res of
+                  Nothing -> raiseErrorMessage "Index out of range."
+                  Just x -> return x
+                where res :: Maybe Value
+                      res = get $ until cond upd (xs, i)
+                      cond (l, m) = l == [] || m == 0
+                      upd (_:as, k) = (as, k - 1)
+                      upd _ = undefined
+                      get (a:_, 0) = Just a
+                      get ([], _) = Nothing
+                      get (a:_, _) = undefined
 
 standardEnv', standardEnv :: M.Map String Func
 
@@ -132,5 +151,6 @@ standardEnv' = M.fromList [
   , ("isEmpty", checkFunc EmptyC)
   , ("isCons", checkFunc $ ConsC AnyC listAnyC)
 
+  , ("index", funcE index)
   , ("len", func (length :: [Value] -> Int))
   ] :: M.Map String Func

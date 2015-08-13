@@ -83,6 +83,7 @@ readName !tc s =
                xs -> ret (init xs) (last xs)
   where ret ms n = return $ tc $ N ms n
 
+readDotOperator :: Monad m => String -> m TokenData
 readDotOperator dots@('.':(!s)) =
   case splitOn "." s of
     [] -> error "readDotOperator: splitOn returned an empty list."
@@ -104,6 +105,7 @@ readOperator !s
 readFunction = readName Function
 readFunctional = readName Functional
 
+readInt, readReal :: String -> TokenData
 (readInt, readReal) = (IntLiteral . read, RealLiteral . read)
 
 readNumber ('~':s) = readNumber $ "-" ++ s
@@ -119,6 +121,7 @@ readNumber s | '^' `elem` s || '.' `elem` s =
                  _ -> illegalToken "Invalid float."
              | otherwise = return $ readInt s
 
+readHash "#" = return Hash
 readHash "#t" = return TrueLiteral
 readHash "#f" = return FalseLiteral
 readHash s0@('#':s@(_:_)) | all isDigit s = return $ Indexer (read s)

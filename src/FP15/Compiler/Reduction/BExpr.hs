@@ -80,7 +80,9 @@ toBE (TOperator o) = do
   return $ BFunc $ withSameLoc o f
 toBE (TDotOperator f) = return $ BFunc f
 toBE (TApp fl es) = BApp fl <$> mapM toBE es
-toBE (TIndex i) = base "Index" <*> pure [BConst $ Int 1]
+toBE (TIndex i) =
+  return (baseA "Fork" [ BFunc $ stdNameL "_", BConst $ Int $ fromIntegral i]
+          |> (BFunc $ stdNameL "index"))
 
 toBE (TIf p a b) = base "If" <*> mapM toBE [p, a, b]
 toBE (TFork es) = base "Fork" <*> mapM toBE es
@@ -191,6 +193,9 @@ lookupOpOnly o = do
 
 base :: Monad m => String -> m ([BExpr] -> BExpr)
 base = return . BApp . stdNameL
+
+baseA :: String -> [BExpr] -> BExpr
+baseA = BApp . stdNameL
 
 stdNameL :: String -> LocName f
 stdNameL = Loc Nothing . stdName

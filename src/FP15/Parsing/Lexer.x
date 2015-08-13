@@ -77,6 +77,7 @@ tokens :-
   \} { pop Brace RBrace }
   \( { push Paren LParen }
   \) { pop Paren RParen }
+  -- TODO eliminate them in favor of ternary operators
   \| { act $ const $ return Pipe }
   \: { act $ const $ return Colon }
   \, { act $ const $ return Comma }

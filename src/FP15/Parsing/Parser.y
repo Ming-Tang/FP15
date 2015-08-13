@@ -29,6 +29,7 @@ eof { Token EOF _ _ }
 ":" { Token Colon _ _ }
 "," { Token Comma _ _ }
 ";" { Token Semicolon _ _ }
+"#" { Token Hash _ _ }
 "=" { Token (Operator (N [] "=")) _ _ }
 
 function { (viewFunction -> Just $$) }
@@ -82,11 +83,18 @@ expr_list : expr_list "," expr { $1 ++ [$3] }
 primary : function { TFunc $1 }
         | literal { $1 }
         | indexer { TIndex $1 }
-        | "{" ":" "[" binding_list "]" expr "}" { TLet $4 $6 }
+
+        | "#" "[" binding_list "]" primary { TLet $3 $5 }
         | "(" primary_or_op_seq ")" { TUnresolvedInfixNotation $2 }
         | "(" functional primary_or_op_seq ")" { TApp $2 $3 }
         | "[" expr_list "]" { TFork $2 }
-        | "{" expr "}" { $2 }
+
+        -- Hook or grouping
+        | "{" expr_list "}" { braces $2 }
+        -- Hook (explicit commas)
+        | "{" expr_list "," "}" { THook $2 }
+        | "{" "," expr_list "}" { THook $3 }
+        | "{" "," expr_list "," "}" { THook $3 }
 
 literal : false  { TValue $ Bool False }
         | true  { TValue $ Bool True }
@@ -108,6 +116,10 @@ parseError ts = throwError $ "Parse error with tokens " ++ (show $ take 2 ts) ++
 
 primList [x] = x
 primList xs = TUnresolvedPrimaryList xs
+
+braces :: [ExprAST] -> ExprAST
+braces [x] = x
+braces xs = THook xs
 
 viewFunction :: Token -> Maybe (LocName F)
 viewFunctional :: Token -> Maybe (LocName Fl)
