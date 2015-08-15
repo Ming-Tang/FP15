@@ -9,7 +9,7 @@ fib3 = (If (Compose (Fork _ 1) <=)
                     +))
 
 fac = (< 1) : 1 | (* {(-1) fac})
-fac1 = [_, 1] < : 1 | [_, pred fac] *
+fac1 = [_, 1] < : 1 | [_, [_, 1] - fac] *
 fac2 = (If (Compose (Fork _ 1) <)
            1
            (Compose (Fork _ (Compose pred fac)) *))
