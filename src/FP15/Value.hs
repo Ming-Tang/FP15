@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, DeriveGeneric #-}
+{-# LANGUAGE Safe, FlexibleInstances, DeriveGeneric #-}
 module FP15.Value where
 import GHC.Generics
 import Control.DeepSeq
@@ -16,6 +16,7 @@ instance NFData Value
 
 class Eq t => ValueConvertible t where
   toValue :: t -> Value
+default (Value)
 
 instance ValueConvertible Value where
   toValue = id

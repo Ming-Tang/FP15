@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, ExistentialQuantification, ImpredicativeTypes #-}
+{-# LANGUAGE Safe, GADTs, ExistentialQuantification, ImpredicativeTypes #-}
 module FP15.Evaluator.Contract where
 import Control.Monad(guard, liftM2, liftM3, liftM4, liftM5)
 import Data.Maybe(isJust, catMaybes)

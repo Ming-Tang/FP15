@@ -111,6 +111,7 @@ joinParts f ps = let (xs, y) = toListR ps in
   case uniq $ map (\(_, a, _) -> a) xs of
     Left Nothing -> f y
     Left (Just VarA) ->
+      -- TODO uniq doesn't work because all location info is unique
       case uniq $ map (\(_, _, o) -> o) xs of
         Left (Just o) -> do
           ys <- mapM (\(x, _, _) -> f x) xs

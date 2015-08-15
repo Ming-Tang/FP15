@@ -1,5 +1,6 @@
-{-# LANGUAGE GADTs, RankNTypes, ExistentialQuantification, ImpredicativeTypes,
-             StandaloneDeriving, FlexibleInstances, DeriveGeneric #-}
+{-# LANGUAGE Safe, GADTs, RankNTypes, ExistentialQuantification #-}
+{-# LANGUAGE ImpredicativeTypes, StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances, DeriveGeneric #-}
 module FP15.Evaluator.Types where
 import GHC.Generics
 import Control.DeepSeq
@@ -170,6 +171,7 @@ deriving instance Show (Contract t)
 
 class ContractConvertible t where
   asContract :: Contract t
+default (Value)
 
 instance ContractConvertible Value where
   asContract = AnyC
