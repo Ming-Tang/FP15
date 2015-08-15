@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes, ExistentialQuantification, ImpredicativeTypes #-}
 module FP15.Evaluator.Standard where
+import Data.List(transpose)
 import Prelude hiding (div)
 import Control.Monad(liftM)
 import qualified Data.Map.Strict as M
@@ -60,11 +61,16 @@ numListF f x = liftM (toValue . f) (ensure (ListC NumberC) x)
 foldN f x0 = numListF (foldl f x0)
 
 cons :: (Value, [Value]) -> [Value]
-cons (a, b) = a : b
-uncons (Cons (x, xs)) = [x, List xs]
-distl (a, xs) = map (\x -> List [a, x]) xs
-distr (xs, a) = map (\x -> List [x, a]) xs
+decons :: Cons Value [Value] -> (Value, [Value])
+distl :: (Value, [Value]) -> [(Value, Value)]
+distr :: ([Value], Value) -> [(Value, Value)]
 
+cons (a, b) = a : b
+decons (Cons (x, xs)) = (x, xs)
+distl (a, xs) = map (\x -> (a, x)) xs
+distr (xs, a) = map (\x -> (x, a)) xs
+
+subLike :: (b -> a -> b) -> Cons b [a] -> b
 subLike f (Cons (a, b)) = foldl f a b
 
 -- | The 'checkFunc' function creates a 'Func' that returns true if and only if
@@ -96,6 +102,8 @@ standardEnv = M.mapKeys (\n -> "Std." ++ n) standardEnv'
 standardEnv' = M.fromList [
     ("_", return)
 
+  , ("range", func2 (enumFromTo :: Integer -> Integer -> [Integer]))
+  , ("xrange", func2 ((\x y -> [x..y - 1]) :: Integer -> Integer -> [Integer]))
   , ("succ", func (`add` IntN 1))
   , ("pred", func (`sub` IntN 1))
   , ("isEven", func (even :: Integer -> Bool))
@@ -119,19 +127,23 @@ standardEnv' = M.fromList [
   , ("sgn", func N.sgn)
   , ("abs", func N.abs)
 
-  , ("gt", func2 N.greaterThan)
-  , ("lt", func2 N.lessThan)
-  , ("ge", func2 N.greaterEq)
-  , ("le", func2 N.lessEq)
+  , ("gt", func2 ((>) :: Value -> Value -> Bool))
+  , ("lt", func2 ((<) :: Value -> Value -> Bool))
+  , ("ge", func2 ((>=) :: Value -> Value -> Bool))
+  , ("le", func2 ((<=) :: Value -> Value -> Bool))
 
-  , ("distl", func distl)
-  , ("distr", func distl)
+  , ("f", func $ (const False :: Value -> Bool))
+  , ("t", func $ (const True :: Value -> Bool))
+
   , ("cons", func cons)
-  , ("uncons", func uncons)
-
+  , ("decons", func decons)
   -- TODO make comp functions variadic
   , ("eq", func2 ((==) :: Value -> Value -> Bool))
   , ("ne", func2 ((/=) :: Value -> Value -> Bool))
+
+  , ("and", func $ all id)
+  , ("or", func $ any id)
+  , ("not", func $ not)
 
   , ("is0", func isZero)
   , ("isT", eqFunc $ Bool True)
@@ -151,6 +163,12 @@ standardEnv' = M.fromList [
   , ("isEmpty", checkFunc EmptyC)
   , ("isCons", checkFunc $ ConsC AnyC listAnyC)
 
+  , ("distl", func distl)
+  , ("distr", func distl)
+  , ("reverse", func (reverse :: [Value] -> [Value]))
+  , ("append", func (concat :: [[Value]] -> [Value]))
+  , ("cross", func (sequence :: [[Value]] -> [[Value]]))
+  , ("trans", func (transpose :: [[Value]] -> [[Value]]))
   , ("index", funcE index)
   , ("len", func (length :: [Value] -> Int))
   ] :: M.Map String Func

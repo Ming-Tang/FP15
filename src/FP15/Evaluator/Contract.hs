@@ -8,6 +8,12 @@ import FP15.Evaluator.Types
 
 -- * Common Contracts
 
+listAnyC :: Contract [Value]
+any2C :: Contract (Value, Value)
+any3C :: Contract (Value, Value, Value)
+any4C :: Contract (Value, Value, Value, Value)
+any5C :: Contract (Value, Value, Value, Value, Value)
+
 listAnyC = ListC AnyC
 any2C = Args2C AnyC AnyC
 any3C = Args3C AnyC AnyC AnyC

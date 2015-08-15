@@ -30,12 +30,11 @@ eof { Token EOF _ _ }
 "," { Token Comma _ _ }
 ";" { Token Semicolon _ _ }
 "#" { Token Hash _ _ }
-"=" { Token (Operator (N [] "=")) _ _ }
+"=" { (viewOperatorS "=" -> Just $$) }
 
 function { (viewFunction -> Just $$) }
 functional { (viewFunctional -> Just $$) }
--- TODO fix the parsing of =
-operator { (viewOperator -> Just $$) }
+op { (viewOperator -> Just $$) }
 dotOperator { (viewDotOperator -> Just $$) }
 
 false { Token FalseLiteral _ _ }
@@ -58,6 +57,9 @@ prog : binding_list eof { ModuleAST { astMN = (M ["Main"])
                                     , astExps = []
                                     } }
 
+operator : "=" { $1 }
+         | op { $1 }
+
 binding_list : binding { [$1] }
              | binding_list ";" binding { $1 ++ [$3] }
 
@@ -79,6 +81,7 @@ primary_or_op_seq : primary_op { [$1] }
 
 expr_list : expr_list "," expr { $1 ++ [$3] }
           | expr { [$1] }
+          | { [] }
 
 primary : function { TFunc $1 }
         | literal { $1 }
@@ -88,13 +91,7 @@ primary : function { TFunc $1 }
         | "(" primary_or_op_seq ")" { TUnresolvedInfixNotation $2 }
         | "(" functional primary_or_op_seq ")" { TApp $2 $3 }
         | "[" expr_list "]" { TFork $2 }
-
-        -- Hook or grouping
         | "{" expr_list "}" { braces $2 }
-        -- Hook (explicit commas)
-        | "{" expr_list "," "}" { THook $2 }
-        | "{" "," expr_list "}" { THook $3 }
-        | "{" "," expr_list "," "}" { THook $3 }
 
 literal : false  { TValue $ Bool False }
         | true  { TValue $ Bool True }
@@ -136,6 +133,10 @@ viewOperator _ = Nothing
 
 viewDotOperator (Token (DotOperator n) p _) = Just (Loc (Just p) n)
 viewDotOperator _ = Nothing
+
+viewOperatorS :: String -> Token -> Maybe (LocName Unknown)
+viewOperatorS n' (Token (Operator n0@(N [] n)) p _) | n == n' = Just (Loc (Just p) n0)
+viewOperatorS _ _ = Nothing
 
 -- TODO error reporting for things like Module.abc = def
 locNameToId :: LocName F -> LocId F
