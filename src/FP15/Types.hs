@@ -1,7 +1,8 @@
 {-# LANGUAGE Safe #-}
-{-# LANGUAGE EmptyDataDecls, StandaloneDeriving, DeriveFunctor #-}
-{-# LANGUAGE DefaultSignatures, MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies, FlexibleInstances #-}
+{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DefaultSignatures #-}
 module FP15.Types where
 import FP15.Value(Value)
 import qualified Data.Map.Strict as M
@@ -19,17 +20,6 @@ class Disp a where
 
   default disp :: Show a => a -> String
   disp = show
-
--- * The Same Typeclass
-
-class Eq k => Same a k | a -> k where
-  {-# MINIMAL key #-}
-  key :: a -> k
-  same :: a -> a -> Bool
-  same a b = key a == key b
-
-instance Eq a => Same a a where
-  key = id
 
 -- * Type Synonyms
 -- Short identifiers are needed because of 80-char line length limit.

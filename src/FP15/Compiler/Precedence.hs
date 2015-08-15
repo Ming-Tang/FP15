@@ -1,8 +1,16 @@
+{-# LANGUAGE Safe #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module FP15.Compiler.Precedence (
   -- * Examples
   -- $examples
 
+  -- * The Same Typeclass
+  Same(key, same), Self(..),
   -- * Main Types
   Assoc(..), PrecNode(..), Tree(..), RightTree(..),
   PrecParseError(..),
@@ -19,8 +27,35 @@ import Control.Applicative
 import Data.Maybe(mapMaybe)
 import Data.List.Split(split, whenElt)
 import Data.List
-import FP15.Types(Prec)
-import qualified Data.Set as S
+import FP15.Types(Prec, Located, getLocated)
+import qualified Data.Map as M
+
+-- | The 'Same' typeclass is for determining the "identity" of an operator. This
+-- typeclass is needed to deal with the fact that same operators with different
+-- location info are considered the same.
+--
+-- All instances of the 'Same' typeclass must implement the 'key' function,
+-- which is used to determine if two values are the 'same'.
+class (Eq k, Ord k) => Same a k | a -> k where
+  {-# MINIMAL key #-}
+  key :: a -> k
+  same :: a -> a -> Bool
+  same a b = key a == key b
+
+-- | The 'Self' type is an instance of 'Same' that has key of the value
+-- itself.
+newtype Self a = Self a
+getSelf :: Self a -> a
+getSelf (Self x) = x
+
+instance (Eq a, Ord a) => Same (Self a) a where
+  key = getSelf
+
+instance (Eq a, Ord a) => Same (Located a) a where
+  key = getLocated
+
+instance Same Assoc Assoc where
+  key = id
 
 -- | Precedence are tie-broken by associativity.
 type PrecRepr = (Prec, Maybe Assoc)
@@ -85,11 +120,11 @@ ins x (a:b:cs) !acc = ins x (b:cs) (acc ++ [a])
 --
 -- Precondition: @ns@ is a result of @insDefault@. In other words, @ns@ cannot
 -- contain two consecutive 'TermN's.
-parsePrec :: Ord o => [PrecNode o a] -> Result Tree o a
+parsePrec :: Same o k => [PrecNode o a] -> Result Tree o a
 parsePrec ns = parsePrec' precs ns where
   precs = sort $ mapMaybe getPrec ns
 
-parsePrec' :: Ord o => [PrecRepr] -> [PrecNode o a] -> Result Tree o a
+parsePrec' :: Same o k => [PrecRepr] -> [PrecNode o a] -> Result Tree o a
 parsePrec' (p2@(p, _):ps) (PreN p0 o : ns)
   | p0 < p = Pre o <$> parsePrec' (p2:ps) ns
 parsePrec' (p:ps) ns = joinParts (parsePrec' ps) =<< splitInfixNode p ns
@@ -106,7 +141,7 @@ parsePrec' [] xs@(_:_) = Left $ ConsecutiveTerms xs
 -- 'Tree'.
 --
 -- Precondition: All nodes must have consistent associativity.
-joinParts :: Ord o => ([PrecNode o a] -> Result Tree o a) -> RightTree o a -> Result Tree o a
+joinParts :: Same o k => ([PrecNode o a] -> Result Tree o a) -> RightTree o a -> Result Tree o a
 joinParts f ps = let (xs, y) = toListR ps in
   case uniq $ map (\(_, a, _) -> a) xs of
     Left Nothing -> f y
@@ -145,11 +180,11 @@ toListL (RBranch x (a, o) t) = (x, ys) where
   f (a', o') (RBranch x' (a'', o'') t') = (a', o', x'):f (a'', o'') t'
 
 
-uniq :: Ord a => [a] -> Either (Maybe a) [a]
-uniq l = case S.toList $ S.fromList l of
+uniq :: Same a k => [a] -> Either (Maybe a) [a]
+uniq l = case M.toList $ M.fromList $ map (\x -> (key x, x)) l of
             [] -> Left Nothing
-            [x] -> Left (Just x)
-            ys -> Right ys
+            [(k0, x)] -> Left (Just x)
+            ys -> Right $ map snd ys
 
 -- | The 'splitInfixNode' split a list of @PrecNode@s by infix operators of the
 -- given precedence.

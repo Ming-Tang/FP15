@@ -1,4 +1,7 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 -- | Module for reducing expressins from 'ExprAST' to 'BExpr'.
 module FP15.Compiler.Reduction.BExpr where
 import Data.List.Split
@@ -62,6 +65,9 @@ data BError
 data ResolvedOp f = ResolvedOp { getOp :: !(LocName Unknown)
                                , getResolvedId :: !(Name f) }
                   deriving (Eq, Ord, Show, Read)
+
+instance Same (ResolvedOp f) (Name Unknown, Name f) where
+  key (ResolvedOp (getLocated -> x) n) = (x, n)
 
 getLocResolvedId :: ResolvedOp f -> Located (Name f)
 getLocResolvedId (ResolvedOp (Loc l _) i) = Loc l i

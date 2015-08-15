@@ -1,3 +1,4 @@
+{-# LANGUAGE Safe #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Main where
 import qualified Data.Map as M
