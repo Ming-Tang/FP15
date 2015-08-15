@@ -60,6 +60,11 @@ foldN :: (Number -> Number -> Number) -> Number -> Func
 numListF f x = liftM (toValue . f) (ensure (ListC NumberC) x)
 foldN f x0 = numListF (foldl f x0)
 
+eq :: [Value] -> Bool
+eq (a:b:xs) | a == b = eq (b:xs)
+            | otherwise = False
+eq _ = True
+
 cons :: (Value, [Value]) -> [Value]
 decons :: Cons Value [Value] -> (Value, [Value])
 distl :: (Value, [Value]) -> [(Value, Value)]
@@ -137,12 +142,12 @@ standardEnv' = M.fromList [
 
   , ("cons", func cons)
   , ("decons", func decons)
-  -- TODO make comp functions variadic
-  , ("eq", func2 ((==) :: Value -> Value -> Bool))
-  , ("ne", func2 ((/=) :: Value -> Value -> Bool))
 
-  , ("and", func $ all id)
-  , ("or", func $ any id)
+  , ("eq", func eq)
+  , ("ne", func (not . eq))
+
+  , ("and", func and)
+  , ("or", func or)
   , ("not", func $ not)
 
   , ("is0", func isZero)
