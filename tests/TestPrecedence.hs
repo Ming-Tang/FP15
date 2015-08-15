@@ -1,7 +1,11 @@
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 module TestPrecedence where
 import Control.Applicative
 import Test.QuickCheck
 import FP15.Compiler.Precedence
+
+instance Same (Maybe Bool) (Maybe Bool) where
+  key = id
 
 -- | A list of 'PrecNode' that satistify the precondition of precedence parsing.
 newtype PrecNodeList o a = PrecNodeList [PrecNode o a]

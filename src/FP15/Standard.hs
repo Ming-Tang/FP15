@@ -35,7 +35,7 @@ stdFFixes = map (\(o, p, a, f) -> (Id o, Fixity a p (stdName f))) [
 
   -- Comparison
   , ("=", (8, 0), VarAssoc, "eq")
-  , ("!=", (8, 0), RightAssoc, "ne")
+  , ("!=", (8, 0), VarAssoc, "ne")
   , ("=.", (8, 0), VarAssoc, "neq")
   , ("!=.", (8, 0), VarAssoc, "nne")
   , ("<", (8, 0), VarAssoc, "lt")
