@@ -14,6 +14,7 @@ import Data.Maybe(mapMaybe)
 import FP15.Types
 import FP15.Compiler.Types
 import FP15.Compiler.Reduction
+import FP15.Compiler.SmartSplit()
 import FP15.Evaluator.Types(BaseExpr)
 import qualified FP15.Evaluator.Types as E
 import qualified FP15.Compiler.ModuleBody as MB
