@@ -4,6 +4,7 @@
 
 -- | Module for reducing expressins from 'ExprAST' to 'BExpr'.
 module FP15.Compiler.Reduction.BExpr where
+import Data.Maybe(isJust)
 import Data.List.Split
 import Control.Monad.Error
 import Control.Monad.Trans.Reader
@@ -13,6 +14,7 @@ import FP15.Types
 import FP15.Compiler.Types
 import FP15.Standard(stdName)
 import FP15.Compiler.Precedence
+import FP15.Compiler.SmartSplit
 
 infixl 6 |>
 infixr 6 <|
@@ -76,7 +78,34 @@ getLocResolvedId (ResolvedOp (Loc l _) i) = Loc l i
 
 -- | The 'convExprAST' function converts an 'ExprAST' into a 'BExpr'.
 convExprAST :: LookupOp e => e -> ExprAST -> Either BError BExpr
-convExprAST env ast = runReaderT (toBE ast) env
+convExprAST env ast = runReaderT (toBE =<< doSmartSplit ast) env
+
+doSmartSplit, sst, ss :: LookupOp e => ExprAST -> BResult e ExprAST
+doSmartSplit = sst
+
+sst o@(TOperator _) = ss (TUnresolvedPrimaryList [o])
+sst ast = ss ast
+
+ss (TApp f xs) = TApp f <$> sss xs
+ss (TIf p a b) = TIf <$> sst p <*> sst a <*> sst b
+ss (TFork xs) = TFork <$> mapM sst xs
+ss (THook xs) = THook <$> mapM sst xs
+ss (TUnresolvedPrimaryList xs) = TUnresolvedPrimaryList <$> sss xs
+ss (TUnresolvedInfixNotation xs) = TUnresolvedInfixNotation <$> sss xs
+ss (TLet bs x) = TLet <$> mapM (\(f, y) -> (,) f <$> sst y) bs <*> sst x
+ss a = return a
+
+sss :: LookupOp e => [ExprAST] -> BResult e [ExprAST]
+sss = (concat <$>) . mapM sso
+
+sso :: LookupOp e => ExprAST -> BResult e [ExprAST]
+sso o@(TOperator (Loc l (N [] n))) = do
+  e <- ask
+  case smartSplit (isJust . lookupOp e . N []) n of
+    Nothing -> return [o]
+    Just ps -> return $ map (TOperator . Loc l . N []) ps
+
+sso a = (:[]) <$> ss a
 
 toBE :: LookupOp e => ExprAST -> BResult e BExpr
 toBE (TValue v) = return $ BConst v

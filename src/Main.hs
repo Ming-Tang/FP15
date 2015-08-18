@@ -77,6 +77,7 @@ main = getContents >>= compile
 main = do
   src <- getContents
   let ast = unwrap $ parse $ ModuleSource Nothing src
+  print $ astFs ast
   let m = unwrap' $ stageModule standardCMS ast
   let m' = until ((==) Finished . rmsTag) (unwrap . stepModule) m
   let c = makeCompiledModule m'
