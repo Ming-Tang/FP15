@@ -114,11 +114,7 @@ readNumber ('#':'O':oct) = return $ readInt $ "0o" ++ oct
 readNumber ('#':'x':hex) = return $ readInt $ "0x" ++ hex
 readNumber ('#':'X':hex) = return $ readInt $ "0x" ++ hex
 
-readNumber s | '^' `elem` s || '.' `elem` s =
-               case splitOn "^" s of
-                 [n] -> return $ readReal n
-                 [n, p] -> return $ readReal $ n ++ "e" ++ p
-                 _ -> illegalToken "Invalid float."
+readNumber s | 'e' `elem` s || 'E' `elem` s || '.' `elem` s = return $ readReal s
              | otherwise = return $ readInt s
 
 readHash "#" = return Hash

@@ -22,12 +22,10 @@ $digit = [0-9]
 $letter = [a-zA-Z]
 $lower = [a-z]
 $upper = [A-Z]
-$prime = \'
 
 $ident_char = [_ $digit $letter]
 
-$pre_op = [\@\!\?\~]
-$op_char = [\%\^\&\*\-\+\=\<\>\/\\]
+$op_char = [\@\!\?\~\%\^\&\*\-\+\=\<\>\/\\]
 
 $neg = \~
 
@@ -39,7 +37,7 @@ $neg = \~
 
 @function_part = @underscores | @underscores? $lower $ident_char*
 @functional_part = @underscores? $upper $ident_char*
-@operator_part = $pre_op $op_char* | $op_char+ | "."+
+@operator_part = $op_char+ | "."+
 @operator = (@module_part \( @operator_part \)
             | @operator_part)
 
@@ -53,11 +51,11 @@ $neg = \~
 @integer = $neg? (@hex | @dec | @oct)
 
 @frac = "." [0-9]+
-@exp = "^" [\+\-]? [0-9]+
+@exp = [eE] [\+\-]? [0-9]+
 @real = $neg? @dec (@frac @exp | @frac | @exp)
 
 @number = @integer | @real
-@hash = \# ($pre_op | $op_char | $ident_char+)
+@hash = \# ($op_char | $ident_char+)
 
 @newlines = ($ws* \n)+ $ws*
 
