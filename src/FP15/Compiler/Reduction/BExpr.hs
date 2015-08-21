@@ -108,6 +108,7 @@ sso o@(TOperator (Loc l (N [] n))) = do
 sso a = (:[]) <$> ss a
 
 toBE :: LookupOp e => ExprAST -> BResult e BExpr
+toBE TId = return pId
 toBE (TValue v) = return $ BConst v
 toBE (TFunc f) = return $ BFunc f
 toBE (TOperator o) = do
@@ -116,7 +117,7 @@ toBE (TOperator o) = do
 toBE (TDotOperator f) = return $ BFunc f
 toBE (TApp fl es) = BApp fl <$> mapM toBE es
 toBE (TIndex i) =
-  return (baseA "Fork" [ BFunc $ stdNameL "_", BConst $ Int $ fromIntegral i]
+  return (baseA "Fork" [ pId, BConst $ Int $ fromIntegral i]
           |> (BFunc $ stdNameL "index"))
 
 toBE (TIf p a b) = base "If" <*> mapM toBE [p, a, b]

@@ -77,10 +77,18 @@ primary_op : primary { $1 }
 primary_or_op_seq : primary_op { [$1] }
                   | primary_or_op_seq primary_op { $1 ++ [$2] }
 
--- Unary and binary operator rules not present
+commas : "," { [] }
+       | commas "," { $1 ++ [TId] }
 
-expr_list : expr_list "," expr { $1 ++ [$3] }
-          | expr { [$1] }
+expr_list_head : expr_list_head commas expr { $1 ++ $2 ++ [$3] }
+               | expr { [$1] }
+
+-- TODO leading comma doesn't work
+expr_list : expr_list_head { $1 }
+          | expr_list_head commas { $1 ++ [TId] ++ $2 }
+          | commas expr_list_head { $1 ++ [TId] ++ $2 }
+          | commas expr_list_head commas { $1 ++ [TId] ++ $2 ++ [TId] ++ $3 }
+          | commas { $1 }
           | { [] }
 
 primary : function { TFunc $1 }

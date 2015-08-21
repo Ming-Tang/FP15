@@ -248,6 +248,7 @@ data ExprAST = TValue Value
              | TDotOperator (LocName F)
              | TApp (LocName Fl) [ExprAST]
              | TIndex Int
+             | TId
 
              | TIf ExprAST ExprAST ExprAST
              | TFork [ExprAST]
