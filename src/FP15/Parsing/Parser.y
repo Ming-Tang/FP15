@@ -78,17 +78,17 @@ primary_or_op_seq : primary_op { [$1] }
                   | primary_or_op_seq primary_op { $1 ++ [$2] }
 
 commas : "," { [] }
-       | commas "," { $1 ++ [TId] }
+       | commas "," { TId : $1 }
 
 expr_list_head : expr_list_head commas expr { $1 ++ $2 ++ [$3] }
                | expr { [$1] }
 
 -- TODO leading comma doesn't work
 expr_list : expr_list_head { $1 }
-          | expr_list_head commas { $1 ++ [TId] ++ $2 }
-          | commas expr_list_head { $1 ++ [TId] ++ $2 }
-          | commas expr_list_head commas { $1 ++ [TId] ++ $2 ++ [TId] ++ $3 }
-          | commas { $1 }
+          | expr_list_head commas { $1 ++ TId : $2 }
+          | commas expr_list_head { TId : $1 ++ $2 }
+          | commas expr_list_head commas { TId:$1 ++ $2 ++ TId:$3 }
+          | commas { TId:TId:$1 }
           | { [] }
 
 primary : function { TFunc $1 }
