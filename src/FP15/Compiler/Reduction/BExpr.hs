@@ -83,7 +83,11 @@ convExprAST env ast = runReaderT (toBE =<< doSmartSplit ast) env
 doSmartSplit, sst, ss :: LookupOp e => ExprAST -> BResult e ExprAST
 doSmartSplit = sst
 
-sst o@(TOperator _) = ss (TUnresolvedPrimaryList [o])
+sst o@(TOperator _) = do
+  o' <- ss (TUnresolvedPrimaryList [o])
+  return $ case o' of
+    TUnresolvedPrimaryList [o''] -> o''
+    _ -> o'
 sst ast = ss ast
 
 ss (TApp f xs) = TApp f <$> sss xs
@@ -101,9 +105,9 @@ sss = (concat <$>) . mapM sso
 sso :: LookupOp e => ExprAST -> BResult e [ExprAST]
 sso o@(TOperator (Loc l (N [] n))) = do
   e <- ask
-  case smartSplit (isJust . lookupOp e . N []) n of
-    Nothing -> return [o]
-    Just ps -> return $ map (TOperator . Loc l . N []) ps
+  return $ case smartSplit (isJust . lookupOp e . N []) n of
+    Nothing -> [o]
+    Just ps -> map (TOperator . Loc l . N []) ps
 
 sso a = (:[]) <$> ss a
 

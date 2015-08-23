@@ -51,6 +51,7 @@ readString :: String -> TokenResult
 -- (["Abc","Def"],"Test")
 
 readOperator, readFunction, readFunctional :: String -> TokenResult
+readNumber' :: Bool -> String -> TokenResult
 readNumber, readHash :: String -> TokenResult
 
 readString s0@('"':s) = parse s "" where
@@ -105,17 +106,19 @@ readOperator !s
 readFunction = readName Function
 readFunctional = readName Functional
 
-readInt, readReal :: String -> TokenData
-(readInt, readReal) = (IntLiteral . read, RealLiteral . read)
+readInt, readReal :: Bool -> String -> TokenData
+readInt n = IntLiteral . (if n then negate else id) . read
+readReal n = RealLiteral . (if n then negate else id) . read
 
-readNumber ('~':s) = readNumber $ "-" ++ s
-readNumber ('#':'o':oct) = return $ readInt $ "0o" ++ oct
-readNumber ('#':'O':oct) = return $ readInt $ "0o" ++ oct
-readNumber ('#':'x':hex) = return $ readInt $ "0x" ++ hex
-readNumber ('#':'X':hex) = return $ readInt $ "0x" ++ hex
+readNumber ('~':s) = readNumber' True s
+readNumber s = readNumber' False s
+readNumber' n ('#':'o':oct) = return $ readInt n $ "0o" ++ oct
+readNumber' n ('#':'O':oct) = return $ readInt n $ "0o" ++ oct
+readNumber' n ('#':'x':hex) = return $ readInt n $ "0x" ++ hex
+readNumber' n ('#':'X':hex) = return $ readInt n $ "0x" ++ hex
 
-readNumber s | 'e' `elem` s || 'E' `elem` s || '.' `elem` s = return $ readReal s
-             | otherwise = return $ readInt s
+readNumber' n s | 'e' `elem` s || 'E' `elem` s || '.' `elem` s = return $ readReal n s
+             | otherwise = return $ readInt n s
 
 readHash "#" = return Hash
 readHash "#t" = return TrueLiteral

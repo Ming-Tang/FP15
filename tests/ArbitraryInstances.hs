@@ -8,13 +8,8 @@ import FP15.Compiler.Types
 import FP15.Value
 import Data.Map(Map, fromList)
 import Data.List.NonEmpty(NonEmpty(..))
-
-infixl 3 <++>
-infixr 4 <:>
-(<++>) :: Applicative f => f [a] -> f [a] -> f [a]
-(<:>) :: Applicative f => f a -> f [a] -> f [a]
-a <++> b = (++) <$> a <*> b
-a <:> b = (:) <$> a <*> b
+import ArbitraryTokens
+import Main()
 
 instance (Ord k, Arbitrary k, Arbitrary v) => Arbitrary (Map k v) where
   arbitrary = fromList <$> arbitrary
@@ -25,11 +20,11 @@ instance Arbitrary a => Arbitrary (NonEmpty a) where
 exprASTOfSize :: Int -> Gen ExprAST
 exprASTOfSize n = oneof (zs ++ (if n <= 1 then [] else ps)) where
   zs = [ TValue <$> resize n arbitrary
-       , TFunc <$> resize 30 arbitrary
-       , TOperator <$> resize 30 arbitrary
-       , TDotOperator <$> resize 30 arbitrary
+       , TFunc <$> resize (min n 10) arbitrary
+       , TOperator <$> resize (min n 10) arbitrary
+       , TDotOperator <$> resize (min n 10) arbitrary
        , TIndex <$> (getPositive <$> arbitrary) ]
-  ps = [ TApp <$> resize 30 arbitrary <*> arbList
+  ps = [ TApp <$> resize (min n 10) arbitrary <*> arbList
        , TIf <$> arb3 <*> arb3 <*> arb3
        , TFork <$> arbList
        , THook <$> arbList
@@ -44,28 +39,10 @@ exprASTOfSize n = oneof (zs ++ (if n <= 1 then [] else ps)) where
 valueOfSize :: Int -> Gen Value
 valueOfSize n = oneof (zs ++ (if n <= 1 then [] else [List <$> arbList])) where
   zs = [ Bool <$> arbitrary, Char <$> arbitrary, Int <$> arbitrary
-       , Real <$> arbitrary, Symbol <$> resize 30 arbitrary
-       , String <$> resize 100 arbitrary ]
+       , Real <$> arbitrary, Symbol <$> resize n arbitrary
+       , String <$> resize n arbitrary ]
   arbList = do m <- max 0 . min n <$> arbitrary
                vectorOf m (valueOfSize $ n `div` m)
-
-arbIdent :: Gen String
-arbIdent = listOf1 (elements $ ['A'..'Z'] ++ ['a'..'z'] ++ ['0'..'9'] ++ "_")
-
-arbCapIdent :: Gen String
-arbCapIdent = underscores <++> elements ['A'..'Z'] <:> arbIdent
-
-arbLowIdent :: Gen String
-arbLowIdent = underscores <++> elements ['a'..'z'] <:> arbIdent
-
-opChars :: String
-opChars = "@!?~%^&*-+=<>/\\"
-
-arbOp :: Gen String
-arbOp = oneof [ listOf1 $ elements opChars, resize 10 $ listOf1 $ elements "." ]
-
-underscores :: Gen String
-underscores = oneof [ pure "", pure "", pure "", pure "",  resize 3 (listOf $ pure '_') ]
 
 instance Arbitrary ExprAST where
   arbitrary = sized exprASTOfSize
@@ -74,37 +51,37 @@ instance Arbitrary Value where
   arbitrary = sized valueOfSize
 
 instance Arbitrary (Id Unknown) where
-   arbitrary = Id <$> arbOp
+   arbitrary = Id <$> arbOpName
 
 instance Arbitrary (Id FOp) where
-   arbitrary = Id <$> arbOp
+   arbitrary = Id <$> arbOpName
 
 instance Arbitrary (Id FlOp) where
-   arbitrary = Id <$> arbOp
+   arbitrary = Id <$> arbOpName
 
 instance Arbitrary (Id F) where
-   arbitrary = Id <$> arbLowIdent
+   arbitrary = Id <$> arbFName
 
 instance Arbitrary (Id Fl) where
-   arbitrary = Id <$> arbCapIdent
+   arbitrary = Id <$> arbFlName
 
 instance Arbitrary ModuleName where
-   arbitrary = M <$> listOf arbCapIdent
+   arbitrary = M <$> listOf arbModName
 
 instance Arbitrary (Name Unknown) where
-    arbitrary = N <$> listOf arbCapIdent <*> arbOp
+    arbitrary = N <$> listOf arbModName <*> arbOpName
 
 instance Arbitrary (Name FOp) where
-    arbitrary = N <$> listOf arbCapIdent <*> arbOp
+    arbitrary = N <$> listOf arbModName <*> arbOpName
 
 instance Arbitrary (Name FlOp) where
-    arbitrary = N <$> listOf arbCapIdent <*> arbOp
+    arbitrary = N <$> listOf arbModName <*> arbOpName
 
 instance Arbitrary (Name F) where
-    arbitrary = N <$> listOf arbCapIdent <*> arbLowIdent
+    arbitrary = N <$> listOf arbModName <*> arbFName
 
 instance Arbitrary (Name Fl) where
-    arbitrary = N <$> listOf arbCapIdent <*> arbCapIdent
+    arbitrary = N <$> listOf arbModName <*> arbFlName
 
 instance Arbitrary (Fixity Unknown) where
    arbitrary = Fixity <$> arbitrary <*> arbitrary <*> arbitrary
