@@ -16,10 +16,11 @@ data BaseExprError = InvalidFl (LocName Fl)
 
 toBaseExpr :: T.Expr -> Either BaseExprError BaseExpr
 toBaseExpr (T.Const c) = return $ E.Const c
-toBaseExpr (T.Func (T.Loc _ f)) = return $ E.Func $ disp f
+toBaseExpr (T.Func lf) = return $ E.Func $ disp $ getLocated lf
 
 toBaseExpr (ta -> Just ("BaseF", [f])) = Left BaseF
-toBaseExpr (ta -> Just ("If", [p, a])) = If <$> p <*> a <*> pure (E.Func "Std._")
+toBaseExpr (ta -> Just ("If", [p, a])) =
+  If <$> p <*> a <*> pure (E.Func "Std._")
 toBaseExpr (ta -> Just ("If", [p, a, b])) = If <$> p <*> a <*> b
 toBaseExpr (ta -> Just ("Compose", xs)) = Compose <$> sequence xs
 toBaseExpr (ta -> Just ("Fork", xs)) = Fork <$> sequence xs

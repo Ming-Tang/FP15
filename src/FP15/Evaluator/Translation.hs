@@ -8,6 +8,7 @@ import Data.Maybe(fromMaybe)
 import Data.Map(Map, lookup)
 import qualified Data.Map as M
 import FP15.Value(Value(..))
+import FP15.Name
 import FP15.Evaluator.Types
 import FP15.Evaluator.Error
 import FP15.Evaluator.Standard
@@ -31,14 +32,14 @@ transMap m0 m = m'
                 (lookup s m0)
 
 trans e (Const v) = \(force -> _) -> return v
-trans e (Func f) = markFunc f . e f
+trans e (Func f) = markFunc (noLoc f) . e f
 
 trans e (Compose fs) = compose $ map (trans e) fs
   where compose = foldl c2 return
         a = map (trans e) fs
         c2 fa fb (force -> x) = fa x >>= fb
 
-trans e (If p f g) = markFunc "If" . \(force -> x) ->
+trans e (If p f g) = \(force -> x) ->
   do b <- predOnly p' x
      if b then f' x else g' x
      where (p', f', g') = (trans e p, trans e f, trans e g)
@@ -49,14 +50,14 @@ trans e (Hook fs) = evalHook $ map (trans e) fs
 trans e (Map f) = evalMap $ trans e f
 trans e (Filter p) = evalFilter $ trans e p
 
-trans e (While p f) = markFunc "While" . body where
+trans e (While p f) = body where
   body (force -> x) = do
     b <- predOnly p' x
     if b then f' x >>= body
     else return x
   (p', f') = (trans e p, trans e f)
 
-trans e (Mark k x) = markFunc k . trans e x
+trans e (Mark k x) = markFunc (noLoc k) . trans e x
 
 -- Evaluation helper functions
 
@@ -68,12 +69,12 @@ evalHook :: [Func] -> Func
 evalMap :: Func -> Func
 evalFilter :: Func -> Func
 
-evalFork fs (force -> x) = markFunc "Fork" $ liftM List $ mapM ($ x) fs
-evalHook fs = markFunc "Hook" . listApply pass
+evalFork fs (force -> x) = liftM List $ mapM ($ x) fs
+evalHook fs = listApply pass
   where pass xs = if length xs == length fs
                   then zipWithM ($) fs $!! xs
                   else raisePassMismatchError (length xs) (length fs)
 
-evalMap f = markFunc "Map" . listApply (mapM f)
-evalFilter f = markFunc "Filter" . listApply (filterM $ predOnly f)
+evalMap f = listApply (mapM f)
+evalFilter f = listApply (filterM $ predOnly f)
 

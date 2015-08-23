@@ -2,6 +2,8 @@
 module FP15.Value where
 import GHC.Generics
 import Control.DeepSeq
+import FP15.Disp
+import Text.PrettyPrint
 
 data Value = Bool Bool
            | Char Char
@@ -13,6 +15,21 @@ data Value = Bool Bool
             deriving (Eq, Ord, Show, Read, Generic)
 
 instance NFData Value
+
+instance Disp Value where
+  pretty (Bool False) = text "#f"
+  pretty (Bool True) = text "#t"
+  pretty (Char c) = text ("#\\" ++ [c])
+  pretty (Int i) | i < 0 = text ("~" ++ show (negate i))
+               | otherwise = text (show i)
+  pretty (Real r) | r < 0 = text ("~" ++ show (negate r))
+                | otherwise = text (show r) -- won't work on some edge cases
+  pretty (Symbol s) = text ("'" ++ s)
+  pretty (String s) = text (show s) -- doesn't handle escape well
+  pretty (List xs) =
+   lbrack <> fsep (punctuate comma $ map (nest 2 . pretty) xs) <> rbrack
+
+  disp = show . pretty
 
 class Eq t => ValueConvertible t where
   toValue :: t -> Value

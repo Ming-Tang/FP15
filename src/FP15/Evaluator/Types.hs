@@ -5,9 +5,10 @@ module FP15.Evaluator.Types where
 import GHC.Generics
 import Control.DeepSeq
 import Control.Monad.Error
-import Data.List(intercalate)
-import Data.Maybe(fromMaybe)
 import Data.These(These(..))
+import Text.PrettyPrint
+import FP15.Disp
+import FP15.Name
 import FP15.Value
 
 -- * Expression
@@ -22,25 +23,17 @@ data BaseExpr = Const Value
               | Map BaseExpr
               | Filter BaseExpr
               | While BaseExpr BaseExpr
-              | Mark String BaseExpr
+              | Mark Ident BaseExpr
               deriving (Eq, Show, Read, Generic)
 
 instance NFData BaseExpr
 
 -- * Error and Diagnostics
 
--- | Position on the source code by filename (or 'None' if unknown or not
--- applicable), starting location @(line, col)@ and ending location
--- @(line, col)@.
-data SourceLocation = SourceLocation { sourceFile :: Maybe String
-                                     , sourceFromLineCol :: (Int, Int)
-                                     , sourceToLineCol :: (Int, Int) }
-                    deriving (Eq, Ord, Read)
-
-data StackFrame = StackFrame { location :: Maybe SourceLocation
-                             , function :: Maybe String }
-                deriving (Eq, Ord, Read)
+data StackFrame = StackFrame (Maybe (Located String))
+                deriving (Eq, Ord, Show, Read)
 newtype StackTrace = StackTrace [StackFrame]
+                   deriving (Eq, Ord, Show, Read)
 
 emptyStackTrace :: StackTrace
 emptyStackTrace = StackTrace []
@@ -55,42 +48,37 @@ data RuntimeError = forall a. ContractViolation { contractViolated :: Contract a
                   | ErrorMessage { messageText :: String
                                  , stackTrace :: StackTrace }
 
+deriving instance Show RuntimeError
+
 instance Error RuntimeError where
   strMsg s = ErrorMessage s emptyStackTrace
   noMsg = ErrorMessage "Runtime error." emptyStackTrace
 
-instance Show SourceLocation where
-  show (SourceLocation sf lc0 lc1) =
-      fromMaybe "<source unknown>" sf
-      ++ "(" ++ lc lc0 ++ "-" ++ lc lc1 ++ ")"
-    where lc (r, c) = show r ++ "," ++ show c
+instance Disp StackTrace where
+  pretty (StackTrace st) =
+    joinLines $ text "Stack Trace:" : map pretty (reverse st)
 
-instance Show StackTrace where
-  show (StackTrace st) =
-    joinLines $ "Stack Trace:" : map show (reverse st)
+instance Disp StackFrame where
+  pretty (StackFrame func) =
+    nest 2 $ maybe (text "<func unknown>") pretty func
 
-instance Show StackFrame where
-  show (StackFrame loc func) =
-    "  " ++ fromMaybe "<func unknown>" func ++ " "
-    ++ maybe "" show loc
+instance Disp RuntimeError where
+  pretty (ContractViolation c v st) =
+    joinLines [text "Contract Violation:",
+               text "Contract: " <> text (show c),
+               text "Value: " <> text (disp v),
+               pretty st]
 
-instance Show RuntimeError where
-  show (ContractViolation c v st) =
-    joinLines ["Contract Violation:",
-               "Contract: " ++ show c,
-               "Value: " ++ show v,
-               show st]
+  pretty (PassMismatchError m n st) =
+    joinLines [text ("Pass: Arity mismatch: Expecting " ++ show m ++ " args"),
+               text ("but got " ++ show n ++ "."),
+               text (show st)]
 
-  show (PassMismatchError m n st) =
-    joinLines ["Pass: Arity mismatch: Expecting " ++ show m ++ " args",
-               "but got " ++ show n ++ ".",
-               show st]
+  pretty (ErrorMessage s st) =
+    joinLines [text "Error:" <+> text s, text (show st)]
 
-  show (ErrorMessage s st) =
-    joinLines ["Error: " ++ s, show st]
-
-joinLines :: [String] -> String
-joinLines = intercalate "\n"
+joinLines :: [Doc] -> Doc
+joinLines = vcat
 
 -- TODO use continuation-based monad
 type ResultOf = Either RuntimeError
