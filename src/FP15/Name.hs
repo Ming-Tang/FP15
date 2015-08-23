@@ -61,7 +61,7 @@ data Located a = Loc !(Maybe SrcPos) a
 
 instance Disp a => Disp (Located a) where
   -- abc
-  pretty (Loc Nothing a) = pretty a
+  pretty (Loc Nothing a) = pretty a <> text "@-"
   -- abc@file:12:3
   pretty (Loc (Just l) a) = pretty a <> text "@" <> pretty l
 

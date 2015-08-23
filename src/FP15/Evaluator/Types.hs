@@ -15,7 +15,7 @@ import FP15.Value
 
 type Ident = String
 data BaseExpr = Const Value
-              | Func Ident
+              | Func (Located Ident)
               | Compose [BaseExpr]
               | If BaseExpr BaseExpr BaseExpr
               | Fork [BaseExpr]

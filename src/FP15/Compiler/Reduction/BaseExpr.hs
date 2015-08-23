@@ -3,6 +3,7 @@ module FP15.Compiler.Reduction.BaseExpr (
   BaseExprError(..)
 , toBaseExpr
 ) where
+import Text.PrettyPrint
 import Control.Applicative hiding (Const)
 import FP15.Standard(stdName, stdFls)
 import FP15.Evaluator.Types as E
@@ -14,13 +15,19 @@ data BaseExprError = InvalidFl (LocName Fl)
                    | BaseF
                    deriving (Eq, Ord, Show, Read)
 
+instance Disp BaseExprError where
+  pretty (InvalidFl fl) = text "Invalid functional:" <+> pretty fl
+  pretty (InvalidFlArity fl n) =
+    text "Invalid functional arity:" <+> pretty fl <> text "/" <> int n
+  pretty BaseF = text "Base functional found."
+
 toBaseExpr :: T.Expr -> Either BaseExprError BaseExpr
 toBaseExpr (T.Const c) = return $ E.Const c
-toBaseExpr (T.Func lf) = return $ E.Func $ disp $ getLocated lf
+toBaseExpr (T.Func lf) = return $ E.Func $ fmap disp lf
 
 toBaseExpr (ta -> Just ("BaseF", [f])) = Left BaseF
 toBaseExpr (ta -> Just ("If", [p, a])) =
-  If <$> p <*> a <*> pure (E.Func "Std._")
+  If <$> p <*> a <*> pure (E.Func $ noLoc "Std._")
 toBaseExpr (ta -> Just ("If", [p, a, b])) = If <$> p <*> a <*> b
 toBaseExpr (ta -> Just ("Compose", xs)) = Compose <$> sequence xs
 toBaseExpr (ta -> Just ("Fork", xs)) = Fork <$> sequence xs

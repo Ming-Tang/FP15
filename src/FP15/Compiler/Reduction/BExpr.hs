@@ -4,6 +4,7 @@
 
 -- | Module for reducing expressins from 'ExprAST' to 'BExpr'.
 module FP15.Compiler.Reduction.BExpr where
+import Text.PrettyPrint
 import Data.Maybe(isJust)
 import Data.List.Split
 import Control.Monad.Error
@@ -61,6 +62,22 @@ data BError
   | FlPartialOpNotAllowed !(Maybe (Either (ResolvedOp Fl, FlTree)
                                           (FlTree, ResolvedOp Fl)))
   deriving (Eq, Ord, Show, Read)
+
+withMaybeE :: Doc -> (Maybe ExprAST) -> Doc
+withMaybeE x Nothing = x
+withMaybeE x (Just e) = x $+$ text (show e)
+
+instance Disp BError where
+  pretty (ErrorMsg msg e) = withMaybeE (pretty msg) e
+  pretty (OpNotFound o) = text "Operator not found:" <+> pretty o
+  pretty (PrecErrorF e) =
+    text "Prec error in ()-expr:" <+> pretty e
+  pretty (PrecErrorFl e) =
+    text "Prec error in {}-expr:" <+> pretty e
+  pretty (FlOpNotAllowed o) =
+    text "Functional operator not allowed in ()-expr:" <+> text (show o)
+  pretty (FlPartialOpNotAllowed po) =
+    text "Missing functional operator operand in {}-expr. <TODO msg>"
 
 -- | An 'ResolvedOp' represents an operator (with location of mention) that has
 -- been successfully resolved to an identifier.

@@ -27,6 +27,7 @@ import Control.Applicative
 import Data.Maybe(mapMaybe)
 import Data.List.Split(split, whenElt)
 import Data.List
+import FP15.Disp
 import FP15.Types(Prec, Located, getLocated)
 import qualified Data.Map as M
 
@@ -78,6 +79,9 @@ data RightTree o a = Last [PrecNode o a]
 data PrecParseError o a = ConsecutiveTerms ![PrecNode o a]
                         | MixingVarOp ![o] ![[PrecNode o a]]
                         deriving (Eq, Ord, Show, Read)
+
+instance (Show o, Show a) => Disp (PrecParseError o a) where
+  disp = show
 
 type Result r o a = Either (PrecParseError o a) (r o a)
 

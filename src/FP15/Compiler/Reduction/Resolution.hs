@@ -3,6 +3,7 @@ module FP15.Compiler.Reduction.Resolution (
 , ResolutionError(..)
 , resolveExpr
 ) where
+import Text.PrettyPrint
 import Control.Monad.Error
 import Control.Monad.Trans.Reader
 import Control.Applicative((<$>), (<*>))
@@ -14,6 +15,10 @@ type RResult e a = ReaderT e (Either ResolutionError) a
 data ResolutionError = FNotFound (LocName F)
                      | FlNotFound (LocName Fl)
                      deriving (Eq, Ord, Show, Read)
+
+instance Disp ResolutionError where
+  pretty (FNotFound f) = text "Function not found:" <+> pretty f
+  pretty (FlNotFound f) = text "Functional not found:" <+> pretty f
 
 -- | The 'resolveExpr' function resolves all names inside an 'Expr' to
 -- fully-qualified names.

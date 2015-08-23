@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 module FP15.Disp where
 import Text.PrettyPrint
+import qualified Data.Map as M
 
 -- * The Disp Typeclass
 
@@ -17,6 +18,13 @@ class Disp a where
   disp = show . pretty
   pretty = text . disp
 
+instance Disp () where
+  disp = show
+
 instance Disp String where
   disp = id
   pretty = text
+
+instance (Disp k, Disp v) => Disp (M.Map k v) where
+  pretty = vcat . map (\(k, v) -> pretty k <> colon <+> nest 2 (pretty v)) . M.toList
+

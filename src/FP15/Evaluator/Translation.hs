@@ -32,7 +32,7 @@ transMap m0 m = m'
                 (lookup s m0)
 
 trans e (Const v) = \(force -> _) -> return v
-trans e (Func f) = markFunc (noLoc f) . e f
+trans e (Func lf@(Loc _ f)) = markFunc lf . e f
 
 trans e (Compose fs) = compose $ map (trans e) fs
   where compose = foldl c2 return

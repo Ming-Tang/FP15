@@ -5,6 +5,7 @@
 -- initial module and its dependencies. The fully-reduced forms are ready to be
 -- processed by interpreters or code generators.
 module FP15.Compiler where
+import Text.PrettyPrint
 import Data.List(intercalate)
 import Data.Either
 import Control.Monad.Error
@@ -23,8 +24,13 @@ import qualified FP15.Compiler.ImportedNames as IN
 --import FP15.Compiler.CompiledModuleSet()
 
 data ImportError = CannotImport ModuleName
-                 | NameNotInModule String
+                 | NameNotInModule ModuleName String
                  deriving (Eq, Ord, Show, Read)
+
+instance Disp ImportError where
+  pretty (CannotImport m) = text "Cannot import:" <+> pretty m
+  pretty (NameNotInModule m n) =
+    text "Name not in module:" <+> pretty m <> text "." <> pretty n
 
 -- | Given module AST, resolve their names and operators
 stageModule :: CompiledModuleSet -> ModuleAST
@@ -126,8 +132,8 @@ stepModule r@(ReducingModuleState ss rt (Reducing rm@Module { fs })) =
     mm (Unreduced x) = ce $ Reduced <$> resolveExpr ss x
     mm x = return x
 
-    ce :: Show a => Either a b -> Either String b
-    ce (Left x) = Left $ show x
+    ce :: Disp a => Either a b -> Either String b
+    ce (Left x) = Left $ disp x
     ce (Right y) = Right y
 
     fromRight (Right x) = x

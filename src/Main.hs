@@ -1,7 +1,7 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Main where
-import qualified Data.Map as M
+--import qualified Data.Map as M
 import Data.Map((!))
 import FP15.Parsing()
 import FP15.Parsing.Types
@@ -78,21 +78,17 @@ main = do
   src <- getContents
   let ast = unwrap $ parse $ ModuleSource Nothing src
   -- print $ astFs ast
-  let m = unwrap'' $ stageModule standardCMS ast
+  let m = unwrap $ stageModule standardCMS ast
   let m' = until ((==) Finished . rmsTag) (unwrap . stepModule) m
   let c = makeCompiledModule m'
   let cms' = addModule (ssMN $ rmsSS m') c standardCMS
-  let fl = unwrap'' $ translateCMS cms'
+  let fl = unwrap $ translateCMS cms'
   -- print fl
   let s = transMap standardEnv fl
-  let res = unwrap' $ (s ! "Main.main") (List [])
+  let res = unwrap $ (s ! "Main.main") (List [])
   putStrLn $ disp res
-  where unwrap (Left x) = error x
+  where unwrap (Left x) = error $ disp x
         unwrap (Right x) = x
-        unwrap' (Left x) = error (disp x)
-        unwrap' (Right x) = x
-        unwrap'' (Left x) = error (show x)
-        unwrap'' (Right x) = x
 {-
       case m of
         Left e -> print e
