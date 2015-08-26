@@ -19,3 +19,4 @@ cabal.sandbox.config
 Session.vim
 .*.swp
 .*.sock
+.vagrant/

@@ -13,7 +13,7 @@ except IOError:
 atexit.register(readline.write_history_file, histfile)
 del histfile
 
-proc = os.path.expanduser('~/Code/FP15/dist/build/FP15/FP15')
+proc = os.path.expanduser('./dist/build/FP15/FP15')
 fp15 = None
 defs = []
 

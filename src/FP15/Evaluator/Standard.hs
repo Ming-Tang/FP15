@@ -146,8 +146,8 @@ standardEnv' = M.fromList [
   , ("eq", func eq)
   , ("ne", func (not . eq))
 
-  , ("and", func and)
-  , ("or", func or)
+  , ("and", func (and :: [Bool] -> Bool))
+  , ("or", func (or :: [Bool] -> Bool))
   , ("not", func $ not)
 
   , ("is0", func isZero)

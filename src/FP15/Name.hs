@@ -1,7 +1,10 @@
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveGeneric #-}
 module FP15.Name where
+import GHC.Generics
+import Control.DeepSeq
 import FP15.Disp
 import Data.List(intercalate)
 import Text.PrettyPrint
@@ -10,11 +13,11 @@ import Text.PrettyPrint
 
 -- | An identifier of any kind (function, functional, operator)
 newtype Id a = Id String
-             deriving (Eq, Ord, Show, Read)
+             deriving (Eq, Ord, Show, Read, Generic)
 
 -- | An FP15 module name.
 newtype ModuleName = M [String]
-                   deriving (Eq, Ord, Show, Read)
+                   deriving (Eq, Ord, Show, Read, Generic)
 
 getId :: Id a -> String
 getModuleName :: ModuleName -> [String]
@@ -24,10 +27,12 @@ getModuleName (M n) = n
 
 -- | A fully-qualified name
 data Name a = N ![String] !String
-            deriving (Eq, Ord, Show, Read)
+            deriving (Eq, Ord, Show, Read, Generic)
 
 convName :: Name a -> Name b
 convName (N a b) = N a b
+
+instance NFData (Name a)
 
 instance Disp (Id a) where
   disp = getId
@@ -47,7 +52,9 @@ data SrcPos = SrcPos { position :: !Int
                      , line :: !Int
                      , column :: !Int
                      , file :: !(Maybe String) }
-            deriving (Eq, Ord, Show, Read)
+            deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData SrcPos
 
 instance Disp SrcPos where
   -- file:12:3
@@ -57,7 +64,9 @@ instance Disp SrcPos where
 
 -- | A value with optional location information attached.
 data Located a = Loc !(Maybe SrcPos) a
-               deriving (Eq, Ord, Show, Read, Functor)
+               deriving (Eq, Ord, Show, Read, Functor, Generic)
+
+instance NFData a => NFData (Located a)
 
 instance Disp a => Disp (Located a) where
   -- abc

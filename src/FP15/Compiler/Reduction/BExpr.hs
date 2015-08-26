@@ -1,6 +1,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- | Module for reducing expressins from 'ExprAST' to 'BExpr'.
 module FP15.Compiler.Reduction.BExpr where
