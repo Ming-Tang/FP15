@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 module FP15.Parsing.LexerHelpers where
 import Control.Monad.Error(throwError)
 import Data.Char(isDigit)

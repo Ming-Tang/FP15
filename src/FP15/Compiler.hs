@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns, ViewPatterns #-}
 -- | The @FP15.Compiler@ module contains logic for compiling FP15 programs.
 -- The compilation of an FP15 program starts at the source code of the initial
 -- module, and ends with the fully-reduced forms of all functions in the

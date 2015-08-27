@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances, DeriveGeneric #-}
-{-# LANGUAGE BangPatterns, ViewPatterns #-}
 module FP15.Evaluator.Translation where
 import Prelude hiding (lookup)
 import Control.Monad

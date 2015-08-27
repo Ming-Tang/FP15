@@ -1,5 +1,4 @@
 {
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE Trustworthy #-}
 
 module FP15.Parsing.Parser (parse) where

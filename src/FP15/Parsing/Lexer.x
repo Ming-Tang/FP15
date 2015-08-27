@@ -1,5 +1,4 @@
 {
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
 

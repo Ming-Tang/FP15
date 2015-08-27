@@ -1,7 +1,6 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 -- | Common types for the FP15 compiler.
 module FP15.Compiler.Types (
   module FP15.Compiler.Types

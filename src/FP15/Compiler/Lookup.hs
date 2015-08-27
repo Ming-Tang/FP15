@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 module FP15.Compiler.Lookup where
 import Control.Monad
 import qualified Data.Map.Strict as M

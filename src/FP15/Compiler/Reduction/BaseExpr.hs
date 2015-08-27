@@ -1,4 +1,3 @@
-{-# LANGUAGE ViewPatterns #-}
 module FP15.Compiler.Reduction.BaseExpr (
   BaseExprError(..)
 , toBaseExpr
