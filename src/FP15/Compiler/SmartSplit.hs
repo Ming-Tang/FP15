@@ -1,5 +1,6 @@
 module FP15.Compiler.SmartSplit (smartSplit) where
 import Data.Maybe
+import FP15.Types()
 
 -- | The 'smartSplit' function splits a list so that each part satisfy the
 -- predicate and the lengths of the left parts are greedily maximized. If there

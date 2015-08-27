@@ -183,7 +183,6 @@ instance LookupOp StaticState where
 
 instance Lookup StaticState where
 
-
 _gf :: NE (WithImpSrc a) -> a
 _gf ((_, f) :| _) = f
 
@@ -230,7 +229,6 @@ data ExprState = Unresolved ExprAST
                | Unreduced Expr
                | Reduced Expr
                deriving (Eq, Ord, Show, Read)
-
 
 -- * Compiled
 

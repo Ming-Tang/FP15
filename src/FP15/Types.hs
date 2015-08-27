@@ -5,6 +5,7 @@ module FP15.Types (
 , module FP15.Name
 , module FP15.Types
 ) where
+import Text.PrettyPrint
 import FP15.Disp
 import FP15.Name
 import FP15.Value
@@ -37,6 +38,14 @@ deriving instance Eq Expr
 deriving instance Ord Expr
 deriving instance Show Expr
 deriving instance Read Expr
+
+prettyApp :: Doc -> [Doc] -> Doc
+prettyApp f xs = lparen <> fsep (map (nest 2) (f:xs)) <> rparen
+
+instance Disp Expr where
+  pretty (Const v) = pretty v
+  pretty (App (Loc _ f) xs) = prettyApp (pretty f) $ map pretty xs
+  pretty (Func (Loc _ f)) = pretty f
 
 -- | An FP15 expressions with local bindings.
 data BExpr = BConst Value

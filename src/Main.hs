@@ -3,6 +3,7 @@
 module Main where
 --import qualified Data.Map as M
 import Data.Map((!))
+import Text.PrettyPrint
 import FP15.Parsing()
 import FP15.Parsing.Types
 import FP15.Parsing.Lexer(scanTokens)
@@ -14,6 +15,7 @@ import FP15.Evaluator.Contract()
 import FP15.Compiler
 import FP15.Compiler.Types
 import FP15.Compiler.CompiledModuleSet
+import FP15.Compiler.PrettyPrinting
 import FP15.Compiler.Precedence()
 import FP15.Compiler.Reduction()
 import FP15.Standard(standardCMS)
@@ -77,13 +79,13 @@ main = getContents >>= compile
 main = do
   src <- getContents
   let ast = unwrap $ parse $ ModuleSource Nothing src
-  -- print $ astFs ast
   let m = unwrap $ stageModule standardCMS ast
   let m' = until ((==) Finished . rmsTag) (unwrap . stepModule) m
   let c = makeCompiledModule m'
   let cms' = addModule (ssMN $ rmsSS m') c standardCMS
+  let (CompiledModuleSet cmis) = cms'
+  print $ vcat $ prettyCMILines (M ["Main"]) (cmis ! (M ["Main"]))
   let fl = unwrap $ translateCMS cms'
-  -- print fl
   let s = transMap standardEnv fl
   let res = unwrap $ (s ! "Main.main") (List [])
   putStrLn $ disp res
