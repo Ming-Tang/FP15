@@ -16,6 +16,7 @@ import FP15.Compiler.Types
 import FP15.Standard(stdName)
 import FP15.Compiler.Precedence
 import FP15.Compiler.SmartSplit
+import FP15.Compiler.CommaNotation
 
 infixl 6 |>
 infixr 6 <|
@@ -23,6 +24,7 @@ infixr 6 <|
 -- * Types
 
 type BResult e a = ReaderT e (Either BError) a
+type CResult e t o a = ReaderT e (Either (CError o a)) (t o a)
 
 type FTree = Tree (ResolvedOp F) ExprAST
 type FlTree = Tree (ResolvedOp Fl) ExprAST
@@ -94,39 +96,15 @@ getLocResolvedId (ResolvedOp (Loc l _) i) = Loc l i
 -- * Functions
 
 -- | The 'convExprAST' function converts an 'ExprAST' into a 'BExpr'.
+--
+-- The process involves:
+--
+-- 1. Smart split
+-- 2. Comma notation parsing
+-- 3. Infix notation parsing
+-- 4. Translation
 convExprAST :: LookupOp e => e -> ExprAST -> Either BError BExpr
 convExprAST env ast = runReaderT (toBE =<< doSmartSplit ast) env
-
-doSmartSplit, sst, ss :: LookupOp e => ExprAST -> BResult e ExprAST
-doSmartSplit = sst
-
-sst o@(TOperator _) = do
-  o' <- ss (TUnresolvedPrimaryList [o])
-  return $ case o' of
-    TUnresolvedPrimaryList [o''] -> o''
-    _ -> o'
-sst ast = ss ast
-
-ss (TApp f xs) = TApp f <$> sss xs
-ss (TIf p a b) = TIf <$> sst p <*> sst a <*> sst b
-ss (TFork xs) = TFork <$> mapM sst xs
-ss (THook xs) = THook <$> mapM sst xs
-ss (TUnresolvedPrimaryList xs) = TUnresolvedPrimaryList <$> sss xs
-ss (TUnresolvedInfixNotation xs) = TUnresolvedInfixNotation <$> sss xs
-ss (TLet bs x) = TLet <$> mapM (\(f, y) -> (,) f <$> sst y) bs <*> sst x
-ss a = return a
-
-sss :: LookupOp e => [ExprAST] -> BResult e [ExprAST]
-sss = (concat <$>) . mapM sso
-
-sso :: LookupOp e => ExprAST -> BResult e [ExprAST]
-sso o@(TOperator (Loc l (N [] n))) = do
-  e <- ask
-  return $ case smartSplit (isJust . lookupOp e . N []) n of
-    Nothing -> [o]
-    Just ps -> map (TOperator . Loc l . N []) ps
-
-sso a = (:[]) <$> ss a
 
 toBE :: LookupOp e => ExprAST -> BResult e BExpr
 toBE TId = return pId
@@ -145,6 +123,9 @@ toBE (TIf p a b) = base "If" <*> mapM toBE [p, a, b]
 toBE (TFork es) = base "Fork" <*> mapM toBE es
 toBE (THook es) = base "Hook" <*> mapM toBE es
 
+toBE (TUnresolvedCommaNotation _)
+  = error "FP15.Compiler.Reduction.BExpr.toBE: Unexpected comma notation."
+
 toBE (TUnresolvedPrimaryList ps) =
   toPrecNodesFl ps
   >>= lift . conv PrecErrorFl . parsePrec . insDefault composeOp
@@ -159,6 +140,53 @@ toBE (TUnresolvedInfixNotation ps) =
   >>= fromTreeF
 
 toBE (TLet _ _) = error "FP15.Compiler.Reduction.convExprAST: TLet is not implemented."
+
+-- ** Smart Split
+doSmartSplit, sst, ss :: LookupOp e => ExprAST -> BResult e ExprAST
+doSmartSplit = sst
+
+sst o@(TOperator _) = do
+  o' <- ss (TUnresolvedPrimaryList [o])
+  return $ case o' of
+    TUnresolvedPrimaryList [o''] -> o''
+    _ -> o'
+sst ast = ss ast
+
+ss (TApp f xs) = TApp f <$> sss xs
+ss (TIf p a b) = TIf <$> sst p <*> sst a <*> sst b
+ss (TFork xs) = TFork <$> mapM sst xs
+ss (THook xs) = THook <$> mapM sst xs
+ss (TUnresolvedPrimaryList xs) = TUnresolvedPrimaryList <$> sss xs
+ss (TUnresolvedInfixNotation xs) = TUnresolvedInfixNotation <$> sss xs
+ss (TUnresolvedCommaNotation xs) = TUnresolvedCommaNotation <$> sss' xs
+ss (TLet bs x) = TLet <$> mapM (\(f, y) -> (,) f <$> sst y) bs <*> sst x
+ss a = return a
+
+sss :: LookupOp e => [ExprAST] -> BResult e [ExprAST]
+sss = (concat <$>) . mapM sso
+
+sss' :: LookupOp e => [Either Int ExprAST] -> BResult e [Either Int ExprAST]
+sss' = (concat <$>) . mapM (\x -> case x of Left i -> return [Left i]
+                                            Right a -> map Right <$> sso a)
+
+sso :: LookupOp e => ExprAST -> BResult e [ExprAST]
+sso o@(TOperator (Loc l (N [] n))) = do
+  e <- ask
+  return $ case smartSplit (isJust . lookupOp e . N []) n of
+    Nothing -> [o]
+    Just ps -> map (TOperator . Loc l . N []) ps
+
+sso a = (:[]) <$> ss a
+
+-- ** Comma Notation
+
+toC :: LookupOp e => [Either Int ExprAST] -> CResult e CommaInfix ExprAST ExprAST
+toC es = undefined
+
+toCN :: LookupOp e => ExprAST -> CResult e CommaNode ExprAST ExprAST
+toCN e = undefined
+
+-- ** Precedence Parsing
 
 toPrecNodesFl :: LookupOp e => [ExprAST] -> BResult e [PrecNode (ResolvedOp Fl) ExprAST]
 toPrecNodesFl = mapM toPrecNodeFl

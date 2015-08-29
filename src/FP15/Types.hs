@@ -73,6 +73,7 @@ data ExprAST = TValue Value
 
              | TUnresolvedPrimaryList [ExprAST]
              | TUnresolvedInfixNotation [ExprAST]
+             | TUnresolvedCommaNotation [Either Int ExprAST]
 
              | TLet [(LocId F, ExprAST)] ExprAST
 
