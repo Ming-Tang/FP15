@@ -12,13 +12,13 @@ In function-level programming (also called [point-free][pointfree] and
 [tacit][tacit]), functions are defined without mentioning any of their
 arguments.
 
-Here is the factorial program in FP15:
+Here is the factorial function in FP15:
 
 ```fp15
 fac = (=0) : 1 | (* (-1) fac)
 ```
 
-Here is the program that finds Pythagorean triples:
+Here is a function that finds Pythagorean triples upto a number:
 
 ```fp15
 pytr = [(1..), (1..), (1..2*)] cross ?(#0^2 + #1^2 = #2^2)
