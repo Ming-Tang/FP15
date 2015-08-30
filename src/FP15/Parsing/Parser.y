@@ -5,6 +5,8 @@ module FP15.Parsing.Parser (parse) where
 import qualified Data.Map.Strict as M
 import Control.Monad.Error
 import Data.Map.Strict(Map)
+import Data.Maybe
+import Data.List.Split
 import FP15.Parsing.Types
 import FP15.Parsing.Lexer
 import FP15.Types
@@ -76,6 +78,12 @@ primary_op : primary { $1 }
 primary_or_op_seq : primary_op { [$1] }
                   | primary_or_op_seq primary_op { $1 ++ [$2] }
 
+f_infix_item : primary_op { Just $1 }
+             | "," { Nothing }
+
+f_infix_body : f_infix_item { [$1] }
+             | f_infix_body f_infix_item { $1 ++ [$2] }
+
 commas : "," { [] }
        | commas "," { TId : $1 }
 
@@ -95,7 +103,7 @@ primary : function { TFunc $1 }
         | indexer { TIndex $1 }
 
         | "#" "[" binding_list "]" primary { TLet $3 $5 }
-        | "(" primary_or_op_seq ")" { TUnresolvedInfixNotation $2 }
+        | "(" f_infix_body ")" { parseFInfix $2 }
         | "(" functional primary_or_op_seq ")" { TApp $2 $3 }
         | "[" expr_list "]" { TFork $2 }
         | "{" expr_list "}" { braces $2 }
@@ -144,6 +152,16 @@ viewDotOperator _ = Nothing
 viewOperatorS :: String -> Token -> Maybe (LocName Unknown)
 viewOperatorS n' (Token (Operator n0@(N [] n)) p _) | n == n' = Just (Loc (Just p) n0)
 viewOperatorS _ _ = Nothing
+
+parseFInfix :: [Maybe ExprAST] -> ExprAST
+parseFInfix xs
+  | all isJust xs = TUnresolvedInfixNotation $ map fromJust xs
+  | otherwise =
+    let merge ys | all isNothing ys = [Left $ length ys]
+                 | otherwise = map (Right . fromJust) ys
+        merged = map merge $ split (dropBlanks $ whenElt isNothing) xs in
+    TUnresolvedCommaNotation $ concat merged
+
 
 -- TODO error reporting for things like Module.abc = def
 locNameToId :: LocName F -> LocId F

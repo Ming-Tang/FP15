@@ -26,12 +26,16 @@ data CError o a = TwoSidedCommas Int Int o
 
 data CommaInfix o a = CInfix [CommaNode o a]
                    deriving (Eq, Ord, Show, Read)
-data CommaNode o a = CompN0 ![a] | CompN1 !(CommaInfix o a) ![a] | OpN !Int !o
+data CommaNode o a = CompN0 ![a]
+                   | CompN1 !(CommaInfix o a) ![a]
+                   | OpN !Int !o
                    deriving (Eq, Ord, Show, Read)
 
 data UncommaInfix o a = UInfix [UncommaNode o a]
                      deriving (Eq, Ord, Show, Read)
-data UncommaNode o a = UComp0 !Int ![a]| UComp1 !(UncommaInfix o a) ![a] | UOp !o
+data UncommaNode o a = UComp0 !Int ![a]
+                     | UComp1 !(UncommaInfix o a) ![a]
+                     | UOp !(Int, Int) !o
                      deriving (Eq, Ord, Show, Read)
 
 data P3 o a = C3 !Int | O3 !o | N3 !a
@@ -70,7 +74,12 @@ walkCommaInfix (CInfix ns) = UInfix <$> mapM walkCommaNode ns
 
 walkCommaNode :: CommaNode o a -> State Int (UncommaNode o a)
 walkCommaNode (CompN0 a) = UComp0 <$> get <*> return a
-walkCommaNode (OpN m a) = modify (+ m) *> return (UOp a)
+walkCommaNode (OpN m a) = do
+  n <- get
+  modify (+ m)
+  n' <- get
+  return $ UOp (n, n') a
+
 walkCommaNode (CompN1 n e) = UComp1 <$> walkCommaInfix n <*> return e
 
 convCommaExpr :: CommaInfix o a -> UncommaInfix o a

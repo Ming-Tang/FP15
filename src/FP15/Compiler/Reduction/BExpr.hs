@@ -123,8 +123,15 @@ toBE (TIf p a b) = base "If" <*> mapM toBE [p, a, b]
 toBE (TFork es) = base "Fork" <*> mapM toBE es
 toBE (THook es) = base "Hook" <*> mapM toBE es
 
-toBE (TUnresolvedCommaNotation _)
-  = error "FP15.Compiler.Reduction.BExpr.toBE: Unexpected comma notation."
+toBE (TUnresolvedCommaNotation xs)
+  = error ("FP15.Compiler.Reduction.BExpr.toBE: Unexpected comma notation: "
+           ++ show (fmap convCommaExpr $ toCommaInfix (
+                (\x -> Nothing), -- if x is TUnresolvedCommaNotation, ...
+                (\y -> case y of
+                         TOperator _ -> Left y
+                         TDotOperator _ -> Left y
+                         _ -> Right y)
+              ) xs)) where
 
 toBE (TUnresolvedPrimaryList ps) =
   toPrecNodesFl ps
