@@ -11,7 +11,7 @@ Factorial
 ---------
 
 ```fp15
-fac = (=0) : 1 | (* (-1) fac)
+fac = (= 0) : 1 | (* (-1) fac)
 ```
 
 The definition of `fac` is recursive. The top-level is a conditional that checks
@@ -26,6 +26,13 @@ special marker for constants.
 The false branch contains an infix notation (a special syntax signaled by `()`).
 The expression reads as "times minus one factorial", where the subject of
 "times" and "minus one" is the input argument.
+
+Fibonacci
+---------
+
+```fp15
+fib = (< 2) : 1 | ((-1) fib + (-2) fib)
+```
 
 Inner Product
 -------------
@@ -75,6 +82,13 @@ input lists. It is FP15's equivalent of nested loops.
 Finally, the expression `?(#0^2 + #1^2 = #2^2)` filters out combinations that
 conform to the equality `x^2 + y^2 = z^2`, where `x, y, z` are the three
 elements of the input item, accessed by `#0, #1, #2` respectively.
+
+Quicksort
+---------
+
+```fp15
+qs = (len > 1) : decons [?<{>} qs, [#0], ?<{<=} qs] ++
+```
 
 Basic Syntax
 ============
@@ -159,7 +173,7 @@ is easier to perform the conversion from outer subexpressions first.
 f = [[2,] *, [1,] %] +
 
 -- g(x, y) = (x + y) / (1 + x y)
-g = [+, [1,] *]
+g = [+, [1, *] +] %
 
 -- h(x, y, z) = sin(x + y(z^2 - 1)^3) / sqrt(x (z + 1) - x y + z^2)
 h = [[#0, [[#1, [[#2, 2] ^, 1] -] *, 3] ^] + sin,
@@ -179,5 +193,13 @@ Infix Notation
 List Processing
 ===============
 
+ - map and filter
+ - trans and cross
+ - insert
+
 `distl`, `distr` and Distributing Functionals
 =============================================
+
+ - the problem of closures
+ - how distl and distr work
+ - distributing functionals: MapL, MapR, etc.
