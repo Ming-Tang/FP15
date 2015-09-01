@@ -1,14 +1,13 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE StandaloneDeriving #-}
 module FP15.Types (
-  module FP15.Disp
-, module FP15.Name
+  module X -- hlint told me to do this
 , module FP15.Types
 ) where
 import Text.PrettyPrint
-import FP15.Disp
-import FP15.Name
-import FP15.Value
+import FP15.Disp as X
+import FP15.Name as X
+import FP15.Value as X
 import qualified Data.Map.Strict as M
 import qualified Data.List.NonEmpty as NE
 

@@ -1,7 +1,12 @@
 {-# LANGUAGE Safe, GADTs, RankNTypes, ExistentialQuantification #-}
 {-# LANGUAGE ImpredicativeTypes, StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances, DeriveGeneric #-}
-module FP15.Evaluator.Types where
+module FP15.Evaluator.Types (
+  module FP15.Evaluator.Types
+, module FP15.Evaluator.FPRef
+, module FP15.Evaluator.XValue
+, module FP15.Evaluator.FP
+) where
 import GHC.Generics
 import Control.DeepSeq
 import Control.Monad.Error
@@ -10,6 +15,9 @@ import Text.PrettyPrint
 import FP15.Disp
 import FP15.Name
 import FP15.Value
+import FP15.Evaluator.FPRef
+import FP15.Evaluator.XValue
+import FP15.Evaluator.FP
 
 -- * Expression
 
@@ -80,9 +88,11 @@ instance Disp RuntimeError where
 joinLines :: [Doc] -> Doc
 joinLines = vcat
 
--- TODO use continuation-based monad
 type ResultOf = Either RuntimeError
 type Result = Either RuntimeError Value
+
+type FPFunc = XValue -> FPResult
+type FPResult = ErrorT RuntimeError FP XValue
 
 -- | An FP15 function, which takes a 'Value' and returns a 'Value' or a
 -- 'RuntimeError'.

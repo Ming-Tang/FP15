@@ -9,6 +9,7 @@ import qualified Data.Map as M
 import FP15.Value(Value(..))
 import FP15.Name
 import FP15.Evaluator.Types
+import FP15.Evaluator.FP
 import FP15.Evaluator.Error
 import FP15.Evaluator.Standard
 import FP15.Evaluator.Contract
@@ -16,11 +17,11 @@ import FP15.Evaluator.Contract
 -- | The 'transMap' function translates a map of identifiers by name to a map of
 -- functions. Notice the map is self-referential therefore 'Data.Map.Strict.Map'
 -- would not work.
-transMap :: Map Ident Func -> Map Ident BaseExpr -> Map Ident Func
+transMap :: Map Ident FPFunc -> Map Ident BaseExpr -> Map Ident FPFunc
 -- | The 'trans' function assembles a function from a 'BaseExpr' and an
 -- identifier resolver that takes an identifier and returns a function for that
 -- identifier.
-trans :: (Ident -> Func) -> BaseExpr -> Func
+trans :: (Ident -> FPFunc) -> BaseExpr -> FPFunc
 
 transMap m0 m = m'
   where
@@ -63,10 +64,10 @@ trans e (Mark k x) = markFunc (noLoc k) . trans e x
 listApply :: ([Value] -> ResultOf [Value]) -> Value -> ResultOf Value
 listApply f (force -> x) = liftM List $ f =<< (ensure listAnyC x)
 
-evalFork :: [Func] -> Func
-evalHook :: [Func] -> Func
-evalMap :: Func -> Func
-evalFilter :: Func -> Func
+evalFork :: [FPFunc] -> FPFunc
+evalHook :: [FPFunc] -> FPFunc
+evalMap :: FPFunc -> FPFunc
+evalFilter :: FPFunc -> FPFunc
 
 evalFork fs (force -> x) = liftM List $ mapM ($ x) fs
 evalHook fs = listApply pass
