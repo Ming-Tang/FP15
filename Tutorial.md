@@ -4,8 +4,92 @@ In FP15, functions are defined using functionals: Combining forms that create
 complex functions from constants and simpler functions. The most used
 functionals are `Compose`, `Fork` and `If`.
 
-Example Code
-============
+FP15 By Example
+===============
+
+Average
+-------
+
+```fp15
+avg = [sum, len] %
+```
+
+The `avg` function demonstrates FP15's two of the basis combinators: `Fork` and
+`Compose`. The average of a list is the sum divided by its length. How to
+construct this program in FP15? In FP15, the `%` function takes the quotient of
+two arguments (more precisely, a two-element list), so the result of the `avg`
+function must be `%`.
+
+What are the arguments for `%`? To feed the sum and length into `%`, we need to
+put a function before it. In FP15, function composition is read left-to-right,
+with no operator between them. In Haskell, you would write `f . g . h` and in
+FP15, you would write `h g f` to do the same thing.
+
+The function `[sum, len]` before the `%` produces a list where the first element
+is the sum of the list and the second element is the length of the list. In
+FP15, the functional for achieving that is the fork, and its syntax is a
+comma-separated list in square brackets. Fork works by taking an argument `x`,
+and producing an list where the `i`th element is `x` applied to the `i`th
+function in the fork. Here is an example of fork that calculates the sum,
+product, minimumm, maximum and length of a list.
+
+```
+[1, 2, 5, 8] [sum, prod, min, max, len]
+=> [[1, 2, 5, 8] sum, [1, 2, 5, 8] prod,
+    [1, 2, 5, 8] min, [1, 2, 5, 8] max, [1, 2, 5, 8] len]
+=> [16, 80, 1, 8, 4]
+```
+
+### With Infix Notation
+
+```fp15
+avg = (sum % len)
+```
+
+The expression `[sum, len] %` can be rewritten as `(sum % len)`, using a
+syntactic sugar called the infix notation. The infix notation is what you expect
+from other programming languages, except the operands are functions. FP15's
+infix notation is user-customizable, and it supports prefix operators infix
+operators of left and right associativities.
+
+Harmonic Mean
+-------------
+
+```fp15
+reci = [1, _] %
+hm = @reci avg reci
+```
+
+The harmonic mean of a list of numbers is the reciprocal of the arithmetic mean
+of the reciprocals. The `hm` function works by applying reciprocal to each item
+of the list (`@reci`), then computing the mean of them (`avg` defined in the
+previous example), and computes the reciprocal again (`reci`).
+
+The new syntax introduced in this example is the `@` operator, which represents
+the `Map` functional. The `Map` functional takes a function, and produces a
+function that takes a list of any length, and applies the function on all
+elements of the list.
+
+The function `reci` takes the reciprocal of a number. Notice the first element
+in the fork is a number `1`. It is technically a constant function, a function
+that takes an argument, ignores it and returns a value. The second element, `_`,
+is the identity function that takes an argument and returns it unchanged.
+
+### With Infix Notation
+
+```fp15
+reci = (1 %)
+hm = @reci avg reci
+```
+
+
+
+Absolute Value
+--------------
+
+```fp15
+abs_ = (< 0) : ~ | _
+```
 
 Factorial
 ---------
@@ -13,19 +97,6 @@ Factorial
 ```fp15
 fac = (= 0) : 1 | (* (-1) fac)
 ```
-
-The definition of `fac` is recursive. The top-level is a conditional that checks
-if the input is zero. In FP15, a conditional looks like `p : f | g` where `p` is
-the predicate, and `f` and `g` are the branches to take (all functions). The
-conditional works by applying the argument on `p`, and if it is true, the result
-is the same argument applied on `f`, or `g` otherwise.
-
-In the true branch, there is a constant `1`. Unlike the original FP, there is no
-special marker for constants.
-
-The false branch contains an infix notation (a special syntax signaled by `()`).
-The expression reads as "times minus one factorial", where the subject of
-"times" and "minus one" is the input argument.
 
 Fibonacci
 ---------
@@ -55,10 +126,6 @@ a compound function created from the `Map` functional and the times operator
 separate? The compiler will split a cluster of symbols based on the existing
 operators in the scope, and because the operator `@*` does not exist, the
 compiler splits it into `@` and `*`.
-
-The `sum` function computes the sum of a list. The aliases of `sum` are `add`
-and the operator `+`. With smart splitting, the definition of `inner` can be
-written as `trans @*+`.
 
 Pythagorean Triples
 -------------------
@@ -116,76 +183,6 @@ The tilde (`~`) prefix is used to negate a number. For example, negative five is
 Values occuring in FP15 programs are constant functions (everything is a
 function in FP15). For example, `"test"` is a function that disregards its
 argument and returns the string `"test"`.
-
-Function Composition
-====================
-Function composition is denoted by the juxtaposing functions in sequence.
-Function composition is performed from left to right. For example, in Haskell
-you would write `c . b . a`, and in FP15, it is `a b c`, and it means "apply a
-on the argument, then apply `b`, then apply `c`".
-
-Lists and Forks
-===============
-Lists are constructed using forks. A fork is denoted by a comma-separated list
-of functions `[f1, ... , fn]`, and a fork works by taking an argument `x`, and
-creates a list of `n` items `[yi, ... , yn]` where `yi` equals `fi` of `x`.
-
-```
-x [f1, ..., fn] => [x f1, ..., x fn]
-```
-
-All functions in FP15 take one argument. Multiple arguments are passed using
-lists. For example, the function `f(x) = x^2 + 3 x` is written as:
-```
-[[_, 2] ^, [3, _] *] +
-```
-`_` is the identity function. Identity functions in a comma-separated list can
-be omitted with empty items:
-```
-[[_, 2] ^, [3, _] *] +  =>  [[,2] ^, [3,] *] +
-[_, a, _, _, b, _]      =>  [, a,,, b,]
-```
-
-Indexers are functions that access an element of a list by index. An indexer is
-denoted by `#n` where `n` is a nonnegative integer (`#0`, `#1` and so on).
-
-Here is an example:
-```
->>> ["x", "y", "z"] #1
-"y"
-```
-
-Indexers are tremendously useful for writing multi-parameter functions. For
-example, `f(x) = cos(x^2 + y^2) / x` is written as:
-
-```
-f = [[[#0, 2] ^, [#1, 2] ^] + cos, #0] %
-```
-
-With fork and composition, more complex expressions can be built. To get used to
-FP15, it is important to practice translating arithmetic expressions to FP15. It
-is easier to perform the conversion from outer subexpressions first.
-
-```
--- % is the division operator
-
--- f(x) = 2 x + 1/x
-f = [[2,] *, [1,] %] +
-
--- g(x, y) = (x + y) / (1 + x y)
-g = [+, [1, *] +] %
-
--- h(x, y, z) = sin(x + y(z^2 - 1)^3) / sqrt(x (z + 1) - x y + z^2)
-h = [[#0, [[#1, [[#2, 2] ^, 1] -] *, 3] ^] + sin,
-     [[[#0, [#2, 1] +] *, [#0, #1] *] -, [#2, 2]^] + sqrt] %
-```
-
-Conditionals
-============
-
- - basics of if
- - factorial and fibonacci
- - grouping
 
 Infix Notation
 ==============
