@@ -3,16 +3,16 @@ module FP15.Evaluator.Contract where
 import Control.Monad(guard, liftM2, liftM3, liftM4, liftM5)
 import Data.Maybe(isJust, catMaybes)
 import Data.These(These(..))
-import FP15.Value(Value(..))
+import FP15.Value
 import FP15.Evaluator.Types
 
 -- * Common Contracts
 
-listAnyC :: Contract [Value]
-any2C :: Contract (Value, Value)
-any3C :: Contract (Value, Value, Value)
-any4C :: Contract (Value, Value, Value, Value)
-any5C :: Contract (Value, Value, Value, Value, Value)
+listAnyC :: Contract [FPValue]
+any2C :: Contract (FPValue, FPValue)
+any3C :: Contract (FPValue, FPValue, FPValue)
+any4C :: Contract (FPValue, FPValue, FPValue, FPValue)
+any5C :: Contract (FPValue, FPValue, FPValue, FPValue, FPValue)
 
 listAnyC = ListC AnyC
 any2C = Args2C AnyC AnyC
@@ -25,11 +25,11 @@ any5C = Args5C AnyC AnyC AnyC AnyC AnyC
 -- | The 'validate' function validates a 'Value' against a 'Contract'. If the
 -- value is validated by the contract, then 'Just' of the extracted value will
 -- be returned. Otherwise, if the validation fails, then 'Nothing' is returned.
-validate :: Contract a -> Value -> Maybe a
+validate :: Contract a -> FPValue -> Maybe a
 -- | The 'validateList' function validates a list of values against a contract.
 -- If /all/ items in the list have been validated, then 'Just' of the extracted
 -- values for each element will be returned. Otherwise, 'Nothing' is returned.
-validateList :: Contract a -> [Value] -> Maybe [a]
+validateList :: Contract a -> [FPValue] -> Maybe [a]
 
 validateList c xs =
   do
@@ -38,6 +38,8 @@ validateList c xs =
     return $ catMaybes valids
 
 validate AnyC x = Just x
+validate ValueC (Extended _) = Nothing
+validate ValueC v = Just $ fromFPValue v
 
 validate BoolC (Bool b) = Just b
 validate SymbolC (Symbol s) = Just (Sym s)

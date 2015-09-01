@@ -1,7 +1,7 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Main where
---import qualified Data.Map as M
+import Control.Monad.Error
 import Data.Map((!))
 import Text.PrettyPrint
 import FP15.Parsing()
@@ -11,6 +11,7 @@ import FP15.Parsing.Parser(parse)
 import FP15.Value
 import FP15.Types hiding (Const, Func)
 import FP15.Evaluator()
+import FP15.Evaluator.Types
 import FP15.Evaluator.Contract()
 import FP15.Compiler
 import FP15.Compiler.Types
@@ -27,37 +28,6 @@ main :: IO ()
 import Data.Map((!))
 import FP15.Evaluator.Standard(standardEnv)
 import FP15.Evaluator.Translation(BaseExpr(..), transMap)
-
-(c, f, fo, cm) = (Const, Func, Fork, Compose)
-
-fac, mf :: BaseExpr
-fac = If (f "zero?")
-         (c (Int 1))
-         (cm [
-           fo [f "i",
-               cm [f "pred", f "fac"]],
-           f "*"])
-
-mf = cm [Map (f "succ"), Filter (f "even?")]
-
-env = transMap standardEnv $ M.fromList [("fac", fac), ("mf", mf)]
-
-fac25 = (env ! "fac") (Int 25)
-facSym = (env ! "fac") (Symbol "test")
-mf1 = (env ! "mf") (String "Hello, world!")
-mf2 = (env ! "mf") (List [Int 1, Int 3, Int 2])
-mf3 = (env ! "mf") (List [Int 1, Real 15.0, Bool False, Real 3.0])
-
-main'' = do
-  present fac25
-  present facSym
-  present mf1
-  present mf2
-  present mf3
-  return ()
-
-present (Left x) = print x >> putStrLn ""
-present (Right x) = print x >> putStrLn ""
 
 interactLines :: (String -> String) -> IO ()
 interactLines l = interact (unlines . map l . lines)
@@ -87,8 +57,8 @@ main = do
   print $ vcat $ prettyCMILines (M ["Main"]) (cmis ! (M ["Main"]))
   let fl = unwrap $ translateCMS cms'
   let s = transMap standardEnv fl
-  let res = unwrap $ (s ! "Main.main") (List [])
-  putStrLn $ disp res
+  res <- fmap unwrap $ runErrorT $ runFP $ (s ! "Main.main") (List [])
+  putStrLn $ disp (res :: FPValue)
   where unwrap (Left x) = error $ disp x
         unwrap (Right x) = x
 {-

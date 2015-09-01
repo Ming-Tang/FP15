@@ -13,51 +13,51 @@ import FP15.Evaluator.Number as N
 
 -- | The 'ensure' function validates a value against a contract, and returns the
 -- matched value, or else, raise a 'ContractViolation' error.
-ensure :: Contract a -> Value -> ResultOf a
+ensure :: Contract a -> FPValue -> FP a
 -- | The 'ensureFunc' function attaches contracts on the input and output of the
--- 'Func', and the return type will be converted to 'ResultOf' the type the
+-- 'FPFunc', and the return type will be converted to 'FP' the type the
 -- output contract matches.
-ensureFunc :: Contract a -> Contract b -> (a -> Result) -> Value -> ResultOf b
--- | The 'ensureIn' function attaches a contract on the input of the 'Func', and
+ensureFunc :: Contract a -> Contract b -> (a -> FPResult) -> FPValue -> FP b
+-- | The 'ensureIn' function attaches a contract on the input of the 'FPFunc', and
 -- if the contract validates, the matched value will be applied on the function
 -- given.
-ensureIn :: Contract a -> (a -> Result) -> Value -> Result
--- | The 'ensureOut' function attaches a contract on the output of the 'Func',
+ensureIn :: Contract a -> (a -> FPResult) -> FPValue -> FPResult
+-- | The 'ensureOut' function attaches a contract on the output of the 'FPFunc',
 -- and if the output validates the output contract, the matched value will be
 -- returned.
-ensureOut :: Contract b -> (Value -> Result) -> Value -> ResultOf b
+ensureOut :: Contract b -> (FPValue -> FPResult) -> FPValue -> FP b
 -- | The 'predOnly' function attaches a 'BoolC' contract on the output of the
--- 'Func', making sure the function only returns booleans.
-predOnly :: Func -> Value -> ResultOf Bool
+-- 'FPFunc', making sure the function only returns booleans.
+predOnly :: FPFunc -> FPValue -> FP Bool
 
 ensure c v =
   case validate c v of
     Nothing -> raiseContractViolation c v
     Just x -> return x
 
-func' :: ValueConvertible b => Contract a -> (a -> b) -> Func
-func :: (ContractConvertible a, ValueConvertible b) => (a -> b) -> Func
+func' :: FPValueConvertible b => Contract a -> (a -> b) -> FPFunc
+func :: (ContractConvertible a, FPValueConvertible b) => (a -> b) -> FPFunc
 func2 :: (ContractConvertible a, ContractConvertible b,
-          ValueConvertible c) => (a -> b -> c) -> Func
+          FPValueConvertible c) => (a -> b -> c) -> FPFunc
 
-func' c f x = liftM (toValue . f) (ensure c x)
+func' c f x = liftM (toFPValue . f) (ensure c x)
 func = func' asContract
 func2 = func . uncurry
 
-funcE :: (ContractConvertible a, ValueConvertible b) => (a -> ResultOf b) -> Func
+funcE :: (ContractConvertible a, FPValueConvertible b) => (a -> FP b) -> FPFunc
 funcE f v = do
   x <- ensure asContract v
   y <- f x
-  return $ toValue y
+  return $ toFPValue y
 
 ensureFunc a b f x = ensure a x >>= f >>= ensure b
 ensureIn = (`ensureFunc` AnyC)
 ensureOut = (AnyC `ensureFunc`)
 predOnly = ensureOut BoolC
 
-numListF :: ([Number] -> Number) -> Func
-foldN :: (Number -> Number -> Number) -> Number -> Func
-numListF f x = liftM (toValue . f) (ensure (ListC NumberC) x)
+numListF :: ([Number] -> Number) -> FPFunc
+foldN :: (Number -> Number -> Number) -> Number -> FPFunc
+numListF f x = liftM (toFPValue . f) (ensure (ListC NumberC) x)
 foldN f x0 = numListF (foldl f x0)
 
 eq :: [Value] -> Bool
@@ -65,10 +65,10 @@ eq (a:b:xs) | a == b = eq (b:xs)
             | otherwise = False
 eq _ = True
 
-cons :: (Value, [Value]) -> [Value]
-decons :: Cons Value [Value] -> (Value, [Value])
-distl :: (Value, [Value]) -> [(Value, Value)]
-distr :: ([Value], Value) -> [(Value, Value)]
+cons :: (FPValue, [FPValue]) -> [FPValue]
+decons :: Cons FPValue [FPValue] -> (FPValue, [FPValue])
+distl :: (FPValue, [FPValue]) -> [(FPValue, FPValue)]
+distr :: ([FPValue], FPValue) -> [(FPValue, FPValue)]
 
 cons (a, b) = a : b
 decons (Cons (x, xs)) = (x, xs)
@@ -78,30 +78,31 @@ distr (xs, a) = map (\x -> (x, a)) xs
 subLike :: (b -> a -> b) -> Cons b [a] -> b
 subLike f (Cons (a, b)) = foldl f a b
 
--- | The 'checkFunc' function creates a 'Func' that returns true if and only if
+-- | The 'checkFunc' function creates a 'FPFunc' that returns true if and only if
 -- the input value passes the contract provided.
-checkFunc :: Contract a -> Func
--- | The 'eqFunc' function creates a 'Func' that returns True if and only if the
+checkFunc :: Contract a -> FPFunc
+-- | The 'eqFunc' function creates a 'FPFunc' that returns True if and only if the
 -- input values equals the value provided.
-eqFunc :: Value -> Func
+eqFunc :: Value -> FPFunc
 
 checkFunc c = return . Bool . isJust . validate c
-eqFunc x = return . Bool . (==) x
+eqFunc x v = do v' <- ensure ValueC v
+                return $ Bool $ (==) v' x
 
-index :: ([Value], Integer) -> ResultOf Value
+index :: ([FPValue], Integer) -> FPResult
 index (xs, i) = case res of
                   Nothing -> raiseErrorMessage "Index out of range."
                   Just x -> return x
-                where res :: Maybe Value
+                where res :: Maybe FPValue
                       res = get $ until cond upd (xs, i)
-                      cond (l, m) = l == [] || m == 0
+                      cond (l, m) = null l || m == 0
                       upd (_:as, k) = (as, k - 1)
                       upd _ = undefined
                       get (a:_, 0) = Just a
                       get ([], _) = Nothing
                       get (a:_, _) = undefined
 
-standardEnv', standardEnv :: M.Map String Func
+standardEnv', standardEnv :: M.Map String FPFunc
 
 standardEnv = M.mapKeys (\n -> "Std." ++ n) standardEnv'
 standardEnv' = M.fromList [
@@ -137,8 +138,8 @@ standardEnv' = M.fromList [
   , ("ge", func2 ((>=) :: Value -> Value -> Bool))
   , ("le", func2 ((<=) :: Value -> Value -> Bool))
 
-  , ("f", func $ (const False :: Value -> Bool))
-  , ("t", func $ (const True :: Value -> Bool))
+  , ("f", func $ (const False :: FPValue -> Bool))
+  , ("t", func $ (const True :: FPValue -> Bool))
 
   , ("cons", func cons)
   , ("decons", func decons)
@@ -170,10 +171,10 @@ standardEnv' = M.fromList [
 
   , ("distl", func distl)
   , ("distr", func distl)
-  , ("reverse", func (reverse :: [Value] -> [Value]))
-  , ("append", func (concat :: [[Value]] -> [Value]))
-  , ("cross", func (sequence :: [[Value]] -> [[Value]]))
-  , ("trans", func (transpose :: [[Value]] -> [[Value]]))
+  , ("reverse", func (reverse :: [FPValue] -> [FPValue]))
+  , ("append", func (concat :: [[FPValue]] -> [FPValue]))
+  , ("cross", func (sequence :: [[FPValue]] -> [[FPValue]]))
+  , ("trans", func (transpose :: [[FPValue]] -> [[FPValue]]))
   , ("index", funcE index)
-  , ("len", func (length :: [Value] -> Int))
-  ] :: M.Map String Func
+  , ("len", func (length :: [FPValue] -> Int))
+  ] :: M.Map String FPFunc

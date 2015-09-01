@@ -1,19 +1,19 @@
+{-# LANGUAGE FlexibleContexts #-}
 module FP15.Evaluator.Error where
 import Control.Monad.Error
-import FP15.Value
 import FP15.Name
 import FP15.Evaluator.Types
 
-runtimeError :: (StackTrace -> RuntimeError) -> ResultOf a
+runtimeError :: MonadError RuntimeError m => (StackTrace -> RuntimeError) -> m a
 pushStackTrace :: StackFrame -> RuntimeError -> RuntimeError
-markStackFrame :: StackFrame -> ResultOf a -> ResultOf a
-markFunc :: Located String -> ResultOf a -> ResultOf a
+markStackFrame :: MonadError RuntimeError m => StackFrame -> m a -> m a
+markFunc :: MonadError RuntimeError m => Located String -> m a -> m a
 
 runtimeError e = throwError $ e emptyStackTrace
 
-raiseContractViolation :: Contract b -> Value -> ResultOf a
-raisePassMismatchError :: Int -> Int -> ResultOf a
-raiseErrorMessage :: String -> ResultOf a
+raiseContractViolation :: MonadError RuntimeError m => Contract b -> FPValue -> m a
+raisePassMismatchError :: MonadError RuntimeError m => Int -> Int -> m a
+raiseErrorMessage :: MonadError RuntimeError m => String -> m a
 
 raiseContractViolation c v = runtimeError $ ContractViolation c v
 raisePassMismatchError m n = runtimeError $ PassMismatchError m n
