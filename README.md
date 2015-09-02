@@ -49,6 +49,9 @@ cabal build
 cabal run < example.fp
 ```
 
+Tutorial
+========
+See [Tutorial.md](./Tutorial.md).
 
 [FP]: https://en.wikipedia.org/wiki/FP_%28programming_language%29
 [pointfree]: https://wiki.haskell.org/Pointfree

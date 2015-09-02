@@ -14,12 +14,8 @@ A FP15 program consists of multiple definitions, and the entry point is the
 
 Line comments begin with `--`.
 
-To define a function in the REPL (`./fp15-repl.py`), prefix the definition with
-`:d`. To show definitions, enter `:s`, and to delete a line of definition, enter
-`:e ` with the line number to delete.
-
 Values
-======
+------
 The datatypes in FP15 are boolean (`#f`, `#t`), character (`#\a`, `#\b`, etc.),
 integer (`123`), real number (`123.456`, `6.02e23`), symbol (`'sym`), string
 (`"hello"`) and list `[1, 2, 3]`.
@@ -31,6 +27,69 @@ Values occuring in FP15 programs are constant functions (everything is a
 function in FP15). For example, `"test"` is a function that disregards its
 argument and returns the string `"test"`.
 
+Identifiers
+-----------
+All identifiers are made of underscores, digits and letters, and identifiers
+cannot start with a digit. There are two kinds of identifiers: function and
+functional. Functions begin with a lowercase letter and functionals begin with
+an uppercase letter. If an identifier begins with underscores, then the first
+letter determines its kind. If an identifier consists only underscores, then it
+is a function. An identifier cannot start with underscores then a digit.
+
+Here are some valid functions:
+
+```
+_
+___
+_test
+_x
+_x1
+a1b2_
+gt
+sort
+x1
+```
+
+Here are some valid functionals:
+
+```
+F1
+Fork
+If
+_X1__
+__Test
+```
+
+Operators
+---------
+Operators are composed of characters `@ ! ? ~ % ^ & * - + = < > / \ : |`. For a
+cluster of operator characters like `@<<=`, the boundary between operators are
+not well-defined until the operators defined in the current scope are known. See
+"Smart Splitting" below.
+
+Off-Side Rule
+-------------
+FP15 has offside rule, which means definitions outside of brackets can be
+continued with an increased indentation. Line breaks separate definitions, but
+they can be joined with the semicolon.
+
+The following two programs are equivalent:
+
+```
+g = a b c
+  d e f
+h = x y z
+```
+
+```
+g = a b c d e f; h = x y z
+```
+
+Using the REPL
+--------------
+To define a function in the REPL (`./fp15-repl.py`), prefix the definition with
+`:d `. To show definitions, enter `:s`, and to delete a line of definition,
+enter `:e ` with the line number to delete.
 
 FP15 By Example
 ===============
