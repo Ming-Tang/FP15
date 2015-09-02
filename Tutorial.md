@@ -4,6 +4,34 @@ In FP15, functions are defined using functionals: Combining forms that create
 complex functions from constants and simpler functions. The most used
 functionals are `Compose`, `Fork` and `If`.
 
+Basic Syntax
+============
+The syntax for function definition is simply `name = expr`. Definitions are
+separated by semicolons or newlines.
+
+A FP15 program consists of multiple definitions, and the entry point is the
+`main` function.
+
+Line comments begin with `--`.
+
+To define a function in the REPL (`./fp15-repl.py`), prefix the definition with
+`:d`. To show definitions, enter `:s`, and to delete a line of definition, enter
+`:e ` with the line number to delete.
+
+Values
+======
+The datatypes in FP15 are boolean (`#f`, `#t`), character (`#\a`, `#\b`, etc.),
+integer (`123`), real number (`123.456`, `6.02e23`), symbol (`'sym`), string
+(`"hello"`) and list `[1, 2, 3]`.
+
+The tilde (`~`) prefix is used to negate a number. For example, negative five is
+`~5`.
+
+Values occuring in FP15 programs are constant functions (everything is a
+function in FP15). For example, `"test"` is a function that disregards its
+argument and returns the string `"test"`.
+
+
 FP15 By Example
 ===============
 
@@ -82,7 +110,13 @@ reci = (1 %)
 hm = @reci avg reci
 ```
 
-
+The `reci` function can be rewritten in terms of the infix notation: `(1 % _)`,
+but when operands are `_`, they can be omitted altogether, leaving `(1 %)`.
+Operand elision is based on Haskell's infix sections (like `(2 +)` or `(* 3)`),
+but is more powerful: Operands can be missing in any part of the infix
+expression, for example, expressions such as `(* 2 + 3)` (double and add three),
+`(* - 2^)` (`x*x + 2^x` as a function of x), are possible in FP15 but not in
+Haskell's sections.
 
 Absolute Value
 --------------
@@ -90,6 +124,12 @@ Absolute Value
 ```fp15
 abs_ = (< 0) : ~ | _
 ```
+
+The absolute value demonstrates the conditional form, `cond : iftrue | iffalse`.
+The conditional form takes an argument `x`, applies `x cond`, if it is true,
+then the result is `x iftrue`, otherwise, `x iffalse`.
+
+`(< 0)` checks if a number is less than zero and `~` negates a number.
 
 Factorial
 ---------
@@ -150,53 +190,184 @@ Finally, the expression `?(#0^2 + #1^2 = #2^2)` filters out combinations that
 conform to the equality `x^2 + y^2 = z^2`, where `x, y, z` are the three
 elements of the input item, accessed by `#0, #1, #2` respectively.
 
+### With Cross Operator
+
+```fp15
+pytr = (1.. >< 1.. >< 1..2*) ?(#0^2 + #1^2 = #2^2)
+```
+
+The `cross` function has infix counterpart, `><`, and its precedence is lower
+than `..`.
+
+### With Comma Notation
+
+```fp15
+pytr = (1.. >< 1.. >< 1..2*) ?(^2 +, ^2 =, ^2)
+```
+The comma notation is a syntactic abstraction that reduces the character count
+of multivariable functions. The idea is that many multivariable functions are
+infix expressions with indexers (`#0`, `#1`, ...) in the beginning (first item
+of function composition) of their operands, and the commas (`,`) increment or
+decrement the indexers.
+
+The comma notation is a tricky syntax. Let's walk through how the comma
+notation above, `(^2 +, ^2 =, ^2)`, is desugared.
+
+First, the expression is divided into regions on operators. Commas around
+operators are part of the operators. In the diagram below, operands (even
+elided) are marked with `{ }` and operators are marked with `|`.
+
+```
+   { } | { } |  { } | { }  |  { } | { }
+ (     ^  2  +,     ^  2   =,     ^  2  )
+```
+
+Then, we walk through the expression from left to right with a counter starting
+at zero. The current value of the counter is marked on the operands, and the
+counter will change with on operators with commas around them. When there are
+`n` commas after an operator (`+,`), the counter increments by `n`, and when
+there are `n` commas before (`,+`) an operator, the counter decrements by `n`.
+In the diagram below, the values of the counters are marked inside `{ }`.
+
+```
+   {0} | {0} |  {1} | {1}  |  {2} | {2}
+ (     ^  2  +,     ^  2   =,     ^  2  )
+```
+
+There is a rule of comma notation not applied in this example. If the values
+ever goes below zero, they are incremented by the same amount so that the
+smallest value is zero (`1 0 -3 -2 1 2` becomes `4 3 0 1 4 5`).
+
+Finally, the indexers of the operand's counter value are inserted before the
+operands. The commas are removed and this completes the conversion from comma
+notation to regular infix notation. Indexers might be inserted before constants
+but this does not affect the final result.
+
+```
+(#0 ^ #0 2 + #1 ^ #1 2 = #2 ^ #1 2)
+```
+
 Quicksort
 ---------
 
 ```fp15
-qs = (len > 1) : decons [?<{>} qs, [#0], ?<{<=} qs] ++
+qs = (len > 1) : decons [?<> qs, [#0], ?<<= qs] ++ | _
 ```
 
-Basic Syntax
-============
-The syntax for function definition is simply `name = expr`. Definitions are
-separated by semicolons or newlines.
+This is the quicksort function often used to introduce functional programming.
+It is actually inefficient because of the time complexity of linked list
+manipulation. The English translation of the function above is:
 
-A FP15 program consists of multiple definitions, and the entry point is the
-`main` function.
+If the length of the list is greater than one (`(len > 1)`), then (`:`):
+ - Split the list into head and tail (`decons`), then (`[`):
+     - find all elements of the tail less than the head (`?<>`), and sort it
+       recursively (`qs`), and (`,`)
+     - wrap the head as a singleton `[#0]`, and (`,`) ".
+     - find all elements of the tail greater than the head (`?<<=`), and sort it
+       recursively (`qs`). (`]`)
+ - and join them (`++`).
+Otherwise, return the list itself.
 
-Line comments begin with `--`.
+### Smart Splitting
+The trickiest parts of the `qs` function are `?<>` and `?<<=`. They are actually
+composed of two operators: `?<>` is made of the functional `?<` and the function
+`>` and `?<<=` is composed of `?<` and `<=`. The compiler splits them apart
+using the feature called smart splitting. Smart splitting splits a cluster of
+symbols into meaningful operators based on the operators available in the scope.
+Smart splitting is greedy, which means it maximizes the length of the leftmost
+operators. This means `?<>` is splitted into `?<` and `>` not `?` and `<>`, even
+though `<>` is a valid operator.
 
-To define a function in the REPL (`./fp15-repl.py`), prefix the definition with
-`:d`. To show definitions, enter `:s`, and to delete a line of definition, enter
-`:e ` with the line number to delete.
+Without smart splitting, `?<>` can be written as `?< <`, using spaces, or
+`?<{<}`, using grouping braces.
 
-Values
-======
-The datatypes in FP15 are boolean (`#f`, `#t`), character (`#\a`, `#\b`, etc.),
-integer (`123`), real number (`123.456`, `6.02e23`), symbol (`'sym`), string
-(`"hello"`) and list `[1, 2, 3]`.
+### Distributing Functions
+`?<` is like `?`, which filters a list, but `?<` has an extra feature to deal
+with the fact that closures don't exist in FP15. Let's translate the `qs`
+function literally to Haskell:
 
-The tilde (`~`) prefix is used to negate a number. For example, negative five is
-`~5`.
+```
+qs [] = []
+qs [x] = [x]
+qs (x:xs) = qs (filter (\y -> x > y)) ++ [x] ++ qs (filter (\y -> x <= y))
+```
 
-Values occuring in FP15 programs are constant functions (everything is a
-function in FP15). For example, `"test"` is a function that disregards its
-argument and returns the string `"test"`.
+Notice in the lambda functions in the two occurences of `filter`, the variable
+`x` is passed as a closure. Closures don't exist in FP15 because there is no
+currying nor named arguments. The solution to this problem is to distribute the
+closed value into the list. For example, we want to filter a list by comparing
+against an external variable . For example, we have the input `[x, ys]` and we
+would like to filter the list `ys` by `x > y` for each element `y`. In Haskell,
+this would be `filter (\y -> x > y)`.
 
-Infix Notation
-==============
+In FP15, we use the `dlstl` function to distribute the value `x` into each
+elements of the list. The definition of distl is:
 
-List Processing
-===============
+```
+[x, [y1, ..., yn]] distl = [[x, y1], ..., [x, yn]]
+```
 
- - map and filter
- - trans and cross
- - insert
+For example, `[1, [2, 3, 4]] distl => [[1,2], [1,3], [1,4]]`.
 
-`distl`, `distr` and Distributing Functionals
-=============================================
+Then we perform the filtering in the distributed list (`?>`), and finally remove
+the distributed element (`@#1`), making the overall function `distl ?> @#1`.
 
- - the problem of closures
- - how distl and distr work
- - distributing functionals: MapL, MapR, etc.
+Since this pattern is so common, we have an operator to shorten that expression,
+which is `?<`. `?<` is defined as `?<p = distl ?<p @#1`.
+
+There is also a right-hand version of `distl`, `distr`. The definition of `distr`
+is:
+
+```
+[[x1, ..., xn], y] => [[x1, y], ..., [xn, y]]
+```
+
+and right-hand version of `?<`, which is `?>`. There are distributed
+counterparts for mapping as well. `@<` is defined as `@<f = distl @f` and `@>`
+is `@>f = distr @f`.
+
+### Operators are Aliases
+In the definition of `qs`, `>`, `<`, `<=` and `++` are operators being used
+outside of infix expressions. When operators are being used outside of infix
+expressions, they are not subject to the syntax of infix notation. There is
+another rule of FP15 stating that all operators are aliases of something. The
+operator `>` is an alias of function `gt`, `<` is `lt`, `<=` is `le`, and `++`
+is `append`. Outside of infix expressions, the operator itself and its alias can
+be used interchangeably. The definition of `qs` can be rewritten as:
+
+```fp15
+qs = (len > 1) : decons [?<gt qs, [#0], ?<le qs] append | _
+```
+
+What about `?<`? `?<` is a prefix operator that maps to a functional. That
+means, you cannot use it inside `()` because `()` is reserved for function
+operators (including operators `>`, `<`, `<=`, `++` above). Additionally,
+functional operators such as `?<` maps to functionals as well. `?<` is also
+called `FilterL`. The syntax for using functionals by name is `(F f1 ... fn)`.
+`qs` can be written as:
+
+```fp15
+qs = (len > 1) : decons [(FilterL gt) qs, [#0], (FilterL le) qs] append | _
+```
+
+### Functionals
+
+In fact, all the syntaxes that combine functions together, such as the if, fork,
+and compose, have their named functionals as well:
+
+```fp15
+qs = (If (Compose (Fork len 1) gt)
+         (Compose
+           decons
+           (Fork
+             (Compose (FilterL gt) qs)
+             (Fork #0)
+             (Compose (FilterL le) qs))
+           append)
+         _)
+```
+
+The FP15 compiles works by translating all syntactic sugars such as the comma
+notation, infix notation, if, fork and compose, into expressions resembling
+S-expressions like the one above. Then the S-expressions are fed into
+translation backends, which translate into a target language, such as Scheme.
