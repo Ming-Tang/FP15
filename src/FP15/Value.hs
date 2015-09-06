@@ -5,6 +5,7 @@ import Control.DeepSeq
 import FP15.Disp
 import Text.PrettyPrint
 
+-- | The 'Void' type contains no values.
 data Void
 deriving instance Eq Void
 deriving instance Ord Void
@@ -12,16 +13,22 @@ deriving instance Show Void
 deriving instance Read Void
 deriving instance Generic Void
 
-data XValue x = Bool Bool
-              | Char Char
-              | Int Integer
-              | Real Double
-              | Symbol String
-              | String String
-              | List [XValue x]
-              | Extended !x
-              deriving (Eq, Ord, Show, Read, Generic, Functor)
+-- | The 'XValue' type is the base type for all FP15 values with extra cases of type @x@.
+-- The extra cases are for the FP15 runtime.
+data XValue x
+  = Bool Bool
+  | Char Char
+  | Int Integer
+  | Real Double
+  | Symbol String
+  | String String
+  | List [XValue x]
+  | Extended !x  -- ^ Strict to make this case impossible for `XValue Void`.
+  deriving (Eq, Ord, Show, Read, Generic, Functor)
 
+-- | A `Value' represents an FP15 value that is well-behaved: Has structural
+-- equality and comparison, is serializable, and can be literally expressed in
+-- FP15 code.
 type Value = XValue Void
 
 instance NFData x => NFData (XValue x)
@@ -40,6 +47,7 @@ instance Disp Value where
   pretty (List xs) =
    lbrack <> fsep (punctuate comma $ map (nest 2 . pretty) xs) <> rbrack
 
+  -- To prevent a compiler warning.
   pretty (Extended _) = error "instance Disp Value: impossible"
 
   disp = show . pretty

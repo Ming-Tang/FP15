@@ -8,6 +8,9 @@ import FP15.Disp
 import FP15.Value
 import FP15.Evaluator.FPRef
 
+-- | The 'FPValue' type represents all possible values in the FP15 runtime. This
+-- includes the well-behaved values and the unserializable values such as
+-- functions and the @RealWorld@.
 type FPValue = XValue Extended
 data Extended = Lambda (FPValue -> FPValue)
               | Ref (FPRef FPValue)
@@ -17,7 +20,7 @@ data Extended = Lambda (FPValue -> FPValue)
 instance NFData Extended
 
 fromFPValue :: FPValue -> Value
-fromFPValue = fmap undefined
+fromFPValue = fmap undefined -- TODO should be a Maybe function...
 
 instance Disp Extended where
   disp (Lambda _) = "#<lambda>#"

@@ -11,6 +11,8 @@ import Control.Monad.IO.Class
 import Control.Monad.Error
 import FP15.Evaluator.RuntimeError
 
+-- | The 'FP' monad is for executing FP15 code. This monad contains 'IO' and
+-- error handling ('RuntimeError').
 newtype FP a = FP { runFP :: ErrorT RuntimeError IO a }
 
 deriving instance MonadIO FP
