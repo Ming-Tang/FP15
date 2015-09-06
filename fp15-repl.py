@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 import os
+import os.path as path
 import readline
 import subprocess as sp
 import atexit
 
-histfile = os.path.join(os.path.expanduser("~"), ".fp15-hist")
+histfile = path.join(path.expanduser("~"), ".fp15-hist")
+
 try:
     readline.read_history_file(histfile)
 except IOError:
@@ -13,7 +15,8 @@ except IOError:
 atexit.register(readline.write_history_file, histfile)
 del histfile
 
-proc = os.path.expanduser('./dist/build/FP15/FP15')
+proc = path.join(path.dirname(path.realpath(__file__)),
+                 path.expanduser('./dist/build/FP15/FP15'))
 fp15 = None
 defs = []
 
