@@ -195,6 +195,17 @@ toCN e = undefined
 
 -- ** Precedence Parsing
 
+precNodeFromFixity :: LocName Unknown -> Located (Fixity f)
+                    -> PrecNode (ResolvedOp f) a
+precNodeFromFixity o o'@(Loc _ (Fixity typ p oa)) =
+  case typ of
+    Prefix -> PreN p $ ResolvedOp o oa
+    LeftAssoc -> InfN LeftA p $ ResolvedOp o oa
+    RightAssoc -> InfN RightA p $ ResolvedOp o oa
+    VarAssoc -> InfN VarA p $ ResolvedOp o oa
+
+-- *** @{}@-Infix Notation
+
 toPrecNodesFl :: LookupOp e => [ExprAST] -> BResult e [PrecNode (ResolvedOp Fl) ExprAST]
 toPrecNodesFl = mapM toPrecNodeFl
 
@@ -221,6 +232,8 @@ fromTreeFl (Inf x ro@(getLocResolvedId -> o) y)
     = throwError $ FlPartialOpNotAllowed $ Just e
   refineE _ e = throwError e
 fromTreeFl (Var (getLocResolvedId -> o) xs) = BApp o <$> mapM fromTreeFl xs
+
+-- *** @()@-Infix Notation
 
 toPrecNodesF :: LookupOp e => [ExprAST] -> BResult e [PrecNode (ResolvedOp F) ExprAST]
 toPrecNodesF = mapM toPrecNodeF . splitPrecNodes
@@ -253,15 +266,6 @@ fromTreeF (Var (getLocResolvedId -> o) xs) = do
   return $ bFork xs' |> BFunc o
 fromTreeF (Term (Just x)) = toBE x
 fromTreeF (Term Nothing) = return pId
-
-precNodeFromFixity :: LocName Unknown -> Located (Fixity f)
-                    -> PrecNode (ResolvedOp f) a
-precNodeFromFixity o o'@(Loc _ (Fixity typ p oa)) =
-  case typ of
-    Prefix -> PreN p $ ResolvedOp o oa
-    LeftAssoc -> InfN LeftA p $ ResolvedOp o oa
-    RightAssoc -> InfN RightA p $ ResolvedOp o oa
-    VarAssoc -> InfN VarA p $ ResolvedOp o oa
 
 -- * Lookups
 
