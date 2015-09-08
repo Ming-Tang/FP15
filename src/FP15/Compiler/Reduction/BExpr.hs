@@ -125,13 +125,16 @@ toBE (THook es) = base "Hook" <*> mapM toBE es
 
 toBE (TUnresolvedCommaNotation xs)
   = error ("FP15.Compiler.Reduction.BExpr.toBE: Unexpected comma notation: "
-           ++ show (fmap convCommaExpr $ toCommaInfix (
-                (\x -> Nothing), -- if x is TUnresolvedCommaNotation, ...
+           ++ show (fmap (insertIndexers _ _ . convCommaExpr) $ toCommaInfix (
+                processInnerInfix,
                 (\y -> case y of
                          TOperator _ -> Left y
                          TDotOperator _ -> Left y
                          _ -> Right y)
               ) xs)) where
+  processInnerInfix (TUnresolvedInfixNotation xs') = Just (map Right xs')
+  processInnerInfix (TUnresolvedCommaNotation xs') = Just xs'
+  processInnerInfix _ = Nothing
 
 toBE (TUnresolvedPrimaryList ps) =
   toPrecNodesFl ps

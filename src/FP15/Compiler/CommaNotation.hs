@@ -14,24 +14,29 @@ module FP15.Compiler.CommaNotation (
 , convCommaExpr
 
 , toCommaInfix
+, insertIndexers
 ) where
 import Control.Applicative
 import Control.Monad.Writer
 import Control.Monad.State
+import Data.Maybe(isJust)
+import Data.List(partition)
 import Data.List.Split
 import FP15.Types()
 
 data CError o a = TwoSidedCommas Int Int o
                 deriving (Eq, Ord, Show, Read)
 
-data CommaInfix o a = CInfix [CommaNode o a]
+-- | Invariant: No consecutive 'CompN0'/'CompN1's
+data CommaInfix o a = CInfix ![CommaNode o a]
                    deriving (Eq, Ord, Show, Read)
 data CommaNode o a = CompN0 ![a]
                    | CompN1 !(CommaInfix o a) ![a]
                    | OpN !Int !o
                    deriving (Eq, Ord, Show, Read)
 
-data UncommaInfix o a = UInfix [UncommaNode o a]
+-- | Invariant: No consecutive 'UComp0'/'UComp1's
+data UncommaInfix o a = UInfix !Int ![UncommaNode o a]
                      deriving (Eq, Ord, Show, Read)
 data UncommaNode o a = UComp0 !Int ![a]
                      | UComp1 !(UncommaInfix o a) ![a]
@@ -45,6 +50,7 @@ data C o a = CO !Int !o | CC0 [a] | CC1 [P3 o a] [a]
 type GetSecondLevel a c = a -> Maybe [Either Int c]
 type OpClassifier o a c = c -> Either o a
 type NodeClassifier o a c = (GetSecondLevel a c, OpClassifier o a c)
+type OpKindClassifier o = o -> Bool
 
 getOffset :: CommaInfix o a -> Int
 getOffset e = getSum $ snd $ runWriter (getExprOffset e)
@@ -70,7 +76,7 @@ getBase = negate . runningMin . getOffsetsExpr where
   runningMin = foldl min 0 . scanl (+) 0
 
 walkCommaInfix :: CommaInfix o a -> State Int (UncommaInfix o a)
-walkCommaInfix (CInfix ns) = UInfix <$> mapM walkCommaNode ns
+walkCommaInfix (CInfix ns) = UInfix <$> get <*> mapM walkCommaNode ns
 
 walkCommaNode :: CommaNode o a -> State Int (UncommaNode o a)
 walkCommaNode (CompN0 a) = UComp0 <$> get <*> return a
@@ -154,3 +160,38 @@ process p (CC1 t xs) = (flip CompN1 xs . CInfix) <$> parse p t
 fromN4 :: P4 o a -> a
 fromN4 (N4 x) = x
 fromN4 _ = error "toCommaInfix: fromN4: Not N4."
+
+-- | The 'insertIndexers' function inserts indexers in the operands. This
+-- function requires the knowledge if an operator is prefix or infix, but
+-- precedence and associativity are not required.
+insertIndexers
+  :: OpKindClassifier o -- ^ Determines if an operator is prefix or infix.
+     -> (Int -> a) -- ^ Generates an indexer.
+     -> UncommaInfix o a -> UncommaInfix o a
+insertIndexers isI indexer (UInfix m0 xs0)
+  = UInfix m0 $ walk m0 $ map cls $ split (whenElt isInfix) xs0 where
+  tryInfix (UOp c o) | isI o = Just (c, o)
+  tryInfix _ = Nothing
+
+  isInfix = isJust . tryInfix
+
+  cls [tryInfix -> Just inf] = Left inf
+  -- for operands: partition into (prefix, begin operand)
+  cls ys | all (not . isInfix) ys =
+           Right $ partition isUOp ys
+         | otherwise = error "insertIndexers: impossible (split didn't work)"
+
+  isUOp (UOp _ _) = True
+  isUOp _ = False
+
+  walk m [] = []
+  walk m (Left ((m', n), o) : xs)
+    | m == m' = UOp (m', n) o : walk n xs
+    | otherwise = error $ "insertIndexers: walk: mismatch: " ++ show m ++ ", " ++ show m'
+  walk m (Right (l, r) : xs) =
+    case r of
+      [] -> [UComp0 m [indexer m]]
+      UComp1 e e1 : ys -> UComp1 (insertIndexers isI indexer e) e1 : ys
+      UComp0 k es : ys -> UComp0 k (indexer m : es) : ys
+      _ -> error $ "insertIndexers: walk: " ++ show (length r) ++ " consecutive operands."
+  -- TODO recursive traversal? (look at 'head r')
