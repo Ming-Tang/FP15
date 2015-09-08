@@ -138,7 +138,7 @@ toBE (TUnresolvedCommaNotation xs) = do
     Right x ->
       error ("FP15.Compiler.Reduction.BExpr.toBE: Unexpected comma notation:\n"
              ++ show ci ++ "\n" ++ show a ++ "\n" ++ show b ++ "\n"
-             ++ show (uciToExprAST x))
+             ++ disp (uciToExprAST x))
   where
     processInnerInfix (TUnresolvedInfixNotation xs') = Just (map Right xs')
     processInnerInfix (TUnresolvedCommaNotation xs') = Just xs'

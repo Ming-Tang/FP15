@@ -81,6 +81,38 @@ deriving instance Ord ExprAST
 deriving instance Show ExprAST
 deriving instance Read ExprAST
 
+instance Disp ExprAST where
+  -- TODO prim/non-prim contexts
+  pretty (TValue v) = pretty v
+  pretty (TFunc (Loc _ f)) = pretty f
+  pretty (TOperator (Loc _ o)) = pretty o
+  pretty (TDotOperator (Loc _ o)) = pretty o
+  pretty (TApp (Loc _ f) xs) =
+    lparen <> fsep (map (nest 2 . pretty) xs) <> rparen
+  pretty (TIndex i) = text ("#" ++ show i)
+  pretty TId = text "_"
+
+  pretty (TIf p a b)
+    = lbrace <> pretty p <> text ":" <> pretty a
+             <> text "|" <> pretty b <> rbrace
+  pretty (TFork xs) =
+    -- XXX copy paste of FP15.Value: instance Disp Value
+    -- TODO extract function
+    lbrack <> fsep (punctuate comma $ map (nest 2 . pretty) xs) <> rbrack
+  pretty (THook xs) =
+    lbrace <> fsep (punctuate comma $ map (nest 2 . pretty) xs) <> rbrace
+  pretty (TUnresolvedPrimaryList xs) =
+    lbrace <> fsep (map (nest 2 . pretty) xs) <> rbrace
+  pretty (TUnresolvedInfixNotation xs) =
+    lparen <> fsep (map (nest 2 . pretty) xs) <> rparen
+  pretty (TUnresolvedCommaNotation xs) =
+    lparen <> fsep (map (nest 2 . dec) xs) <> rparen where
+    dec (Left i) = text (replicate i ',')
+    dec (Right e) = pretty e
+
+  pretty (TLet ds e) =
+    text "#: [...]" <+> lbrace <> pretty e <> rbrace
+
 -- TODO types for derived functionals
 
 -- * Compilation
