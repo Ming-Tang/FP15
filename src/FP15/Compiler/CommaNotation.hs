@@ -92,6 +92,7 @@ convCommaExpr :: CommaInfix o a -> UncommaInfix o a
 convCommaExpr e = evalState (walkCommaInfix e) (getBase e)
 -- TODO doesn't handle missing operands properly
 
+-- TODO leading commas
 toCommaInfix
   :: NodeClassifier o a c
       -> [Either Int c]
@@ -141,6 +142,10 @@ isO (O4 _) = True
 isO (OR4 _ _) = True
 isO _ = False
 
+isUOp :: UncommaNode o a -> Bool
+isUOp (UOp _ _) = True
+isUOp _ = False
+
 classifyGrp :: NodeClassifier o a c -> [P4 o a] -> C o a
 classifyGrp _ [O4 o] = CO 0 o
 classifyGrp _ [OR4 m o] = CO m o
@@ -169,7 +174,7 @@ insertIndexers
      -> (Int -> a) -- ^ Generates an indexer.
      -> UncommaInfix o a -> UncommaInfix o a
 insertIndexers isI indexer (UInfix m0 xs0)
-  = UInfix m0 $ walk m0 $ map cls $ split (whenElt isInfix) xs0 where
+  = UInfix m0 $ evalState (walk isI indexer $ map cls $ split (whenElt isInfix) xs0) m0 where
   tryInfix (UOp c o) | isI o = Just (c, o)
   tryInfix _ = Nothing
 
@@ -181,17 +186,28 @@ insertIndexers isI indexer (UInfix m0 xs0)
            Right $ partition isUOp ys
          | otherwise = error "insertIndexers: impossible (split didn't work)"
 
-  isUOp (UOp _ _) = True
-  isUOp _ = False
+walk
+  :: OpKindClassifier o -> (Int -> a)
+     -> [Either ((Int, Int), o) ([UncommaNode o a], [UncommaNode o a])]
+     -> State Int [UncommaNode o a]
+walk _ _ [] = return []
+walk isI indexer (Left ((m', n), o) : xs) = do
+  m <- get
+  -- XXX validation logic doesn't work with inner exprs involved.
+  {-if m /= m' then
+    error $ "insertIndexers: walk: mismatch: " ++ show (m, m')
+  else do-}
+  put n
+  (UOp (m', n) o :) <$> walk isI indexer xs
 
-  walk m [] = []
-  walk m (Left ((m', n), o) : xs)
-    | m == m' = UOp (m', n) o : walk n xs
-    | otherwise = error $ "insertIndexers: walk: mismatch: " ++ show m ++ ", " ++ show m'
-  walk m (Right (l, r) : xs) =
-    case r of
-      [] -> [UComp0 m [indexer m]]
-      UComp1 e e1 : ys -> UComp1 (insertIndexers isI indexer e) e1 : ys
-      UComp0 k es : ys -> UComp0 k (indexer m : es) : ys
-      _ -> error $ "insertIndexers: walk: " ++ show (length r) ++ " consecutive operands."
-  -- TODO recursive traversal? (look at 'head r')
+walk isI indexer (Right (l, r) : xs) = do
+  m <- get
+  let pd = case r of
+         [] -> [UComp0 m [indexer m]]
+         UComp1 e e1 : ys -> UComp1 (insertIndexers isI indexer e) e1 : ys
+         UComp0 k es : ys ->
+          if k /= m then error ("walk: UComp1 mismatch: " ++ show (m, k))
+          else UComp0 k (indexer m : es) : ys -- TODO validate k?
+         _ -> error ("walk: " ++ show (length r)
+                     ++ " consecutive operands.")
+  ((l ++ pd) ++) <$> walk isI indexer xs

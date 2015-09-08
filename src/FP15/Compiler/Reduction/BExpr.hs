@@ -124,17 +124,22 @@ toBE (TFork es) = base "Fork" <*> mapM toBE es
 toBE (THook es) = base "Hook" <*> mapM toBE es
 
 toBE (TUnresolvedCommaNotation xs)
-  = error ("FP15.Compiler.Reduction.BExpr.toBE: Unexpected comma notation: "
-           ++ show (fmap (insertIndexers _ _ . convCommaExpr) $ toCommaInfix (
-                processInnerInfix,
-                (\y -> case y of
-                         TOperator _ -> Left y
-                         TDotOperator _ -> Left y
-                         _ -> Right y)
-              ) xs)) where
+  = do
+    e <- ask
+    error ("FP15.Compiler.Reduction.BExpr.toBE: Unexpected comma notation:\n"
+            -- TODO actually detect operator type
+           ++ show ci ++ "\n" ++ show a ++ "\n" ++ show b) where
   processInnerInfix (TUnresolvedInfixNotation xs') = Just (map Right xs')
   processInnerInfix (TUnresolvedCommaNotation xs') = Just xs'
   processInnerInfix _ = Nothing
+  isInfixOp = const True
+  ci = toCommaInfix (processInnerInfix,
+      (\y -> case y of
+       TOperator _ -> Left y
+       TDotOperator _ -> Left y
+       _ -> Right y)) xs
+  a = fmap convCommaExpr ci
+  b = fmap (insertIndexers isInfixOp TIndex) a
 
 toBE (TUnresolvedPrimaryList ps) =
   toPrecNodesFl ps

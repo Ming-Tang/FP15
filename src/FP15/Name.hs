@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -64,8 +65,14 @@ instance Disp SrcPos where
 
 -- | A value with optional location information attached.
 data Located a = Loc !(Maybe SrcPos) a
-               deriving (Eq, Ord, Show, Read, Functor, Generic)
+#ifdef CUSTOM_SHOW
+               deriving (Eq, Ord, Read, Functor, Generic)
 
+instance Show a => Show (Located a) where
+  show (Loc _ a) = show a
+#else
+               deriving (Eq, Ord, Show, Read, Functor, Generic)
+#endif
 instance NFData a => NFData (Located a)
 
 instance Disp a => Disp (Located a) where
