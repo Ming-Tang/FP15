@@ -63,6 +63,8 @@ data BError
   --    @o@ is the operator and @a@ is the left operand.
   | FlPartialOpNotAllowed !(Maybe (Either (ResolvedOp Fl, FlTree)
                                           (FlTree, ResolvedOp Fl)))
+
+  | CommaError (CError ExprAST ExprAST)
   deriving (Eq, Ord, Show, Read)
 
 withMaybeE :: Doc -> (Maybe ExprAST) -> Doc
@@ -80,6 +82,7 @@ instance Disp BError where
     text "Functional operator not allowed in ()-expr:" <+> text (show o)
   pretty (FlPartialOpNotAllowed po) =
     text "Missing functional operator operand in {}-expr. <TODO msg>"
+  pretty (CommaError ce) = text "Comma notation error: " <+> text (show ce)
 
 -- | An 'ResolvedOp' represents an operator (with location of mention) that has
 -- been successfully resolved to an identifier.
@@ -123,23 +126,27 @@ toBE (TIf p a b) = base "If" <*> mapM toBE [p, a, b]
 toBE (TFork es) = base "Fork" <*> mapM toBE es
 toBE (THook es) = base "Hook" <*> mapM toBE es
 
-toBE (TUnresolvedCommaNotation xs)
-  = do
-    e <- ask
-    error ("FP15.Compiler.Reduction.BExpr.toBE: Unexpected comma notation:\n"
-            -- TODO actually detect operator type
-           ++ show ci ++ "\n" ++ show a ++ "\n" ++ show b) where
-  processInnerInfix (TUnresolvedInfixNotation xs') = Just (map Right xs')
-  processInnerInfix (TUnresolvedCommaNotation xs') = Just xs'
-  processInnerInfix _ = Nothing
-  isInfixOp = const True
-  ci = toCommaInfix (processInnerInfix,
-      (\y -> case y of
-       TOperator _ -> Left y
-       TDotOperator _ -> Left y
-       _ -> Right y)) xs
-  a = fmap convCommaExpr ci
-  b = fmap (insertIndexers isInfixOp TIndex) a
+toBE (TUnresolvedCommaNotation xs) = do
+  e <- ask
+  -- TODO actually detect operator type
+  let isInfixOp = const True
+  let ci = toCommaInfix (processInnerInfix, classifyOp) xs
+  let a = fmap convCommaExpr ci
+  let b = fmap (insertIndexers isInfixOp TIndex) a
+  case b of
+    Left ce -> throwError $ CommaError ce
+    Right x ->
+      error ("FP15.Compiler.Reduction.BExpr.toBE: Unexpected comma notation:\n"
+             ++ show ci ++ "\n" ++ show a ++ "\n" ++ show b ++ "\n"
+             ++ show (uciToExprAST x))
+  where
+    processInnerInfix (TUnresolvedInfixNotation xs') = Just (map Right xs')
+    processInnerInfix (TUnresolvedCommaNotation xs') = Just xs'
+    processInnerInfix _ = Nothing
+    classifyOp y = case y of
+                     TOperator _ -> Left y
+                     TDotOperator _ -> Left y
+                     _ -> Right y
 
 toBE (TUnresolvedPrimaryList ps) =
   toPrecNodesFl ps
@@ -200,6 +207,15 @@ toC es = undefined
 
 toCN :: LookupOp e => ExprAST -> CResult e CommaNode ExprAST ExprAST
 toCN e = undefined
+
+uciToExprAST :: UncommaInfix ExprAST ExprAST -> ExprAST
+uciToExprAST (UInfix _ xs)
+  = TUnresolvedInfixNotation $ concatMap ucnToExprAST xs
+
+ucnToExprAST :: UncommaNode ExprAST ExprAST -> [ExprAST]
+ucnToExprAST (UComp0 _ c) = c
+ucnToExprAST (UComp1 x c) = uciToExprAST x : c
+ucnToExprAST (UOp _ o) = [o]
 
 -- ** Precedence Parsing
 

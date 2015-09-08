@@ -174,7 +174,9 @@ insertIndexers
      -> (Int -> a) -- ^ Generates an indexer.
      -> UncommaInfix o a -> UncommaInfix o a
 insertIndexers isI indexer (UInfix m0 xs0)
-  = UInfix m0 $ evalState (walk isI indexer $ map cls $ split (whenElt isInfix) xs0) m0 where
+  = UInfix m0 $ evalState walker m0 where
+  walker = walk isI indexer $ map cls $ split (whenElt isInfix) xs0
+
   tryInfix (UOp c o) | isI o = Just (c, o)
   tryInfix _ = Nothing
 
@@ -182,8 +184,7 @@ insertIndexers isI indexer (UInfix m0 xs0)
 
   cls [tryInfix -> Just inf] = Left inf
   -- for operands: partition into (prefix, begin operand)
-  cls ys | all (not . isInfix) ys =
-           Right $ partition isUOp ys
+  cls ys | all (not . isInfix) ys = Right $ partition isUOp ys
          | otherwise = error "insertIndexers: impossible (split didn't work)"
 
 walk
@@ -208,6 +209,5 @@ walk isI indexer (Right (l, r) : xs) = do
          UComp0 k es : ys ->
           if k /= m then error ("walk: UComp1 mismatch: " ++ show (m, k))
           else UComp0 k (indexer m : es) : ys -- TODO validate k?
-         _ -> error ("walk: " ++ show (length r)
-                     ++ " consecutive operands.")
+         _ -> error ("walk: " ++ show (length r) ++ " consecutive operands.")
   ((l ++ pd) ++) <$> walk isI indexer xs
