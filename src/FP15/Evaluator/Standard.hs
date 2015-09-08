@@ -133,10 +133,11 @@ standardEnv' = M.fromList [
   , ("sgn", func N.sgn)
   , ("abs", func N.abs)
 
-  , ("gt", func2 ((>) :: Value -> Value -> Bool))
-  , ("lt", func2 ((<) :: Value -> Value -> Bool))
-  , ("ge", func2 ((>=) :: Value -> Value -> Bool))
-  , ("le", func2 ((<=) :: Value -> Value -> Bool))
+  , ("gt", func2 greaterThan)
+  , ("lt", func2 lessThan)
+  , ("ge", func2 greaterEq)
+  , ("le", func2 lessEq)
+  -- TODO numeric equality
 
   , ("f", func $ (const False :: FPValue -> Bool))
   , ("t", func $ (const True :: FPValue -> Bool))
