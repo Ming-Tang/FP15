@@ -131,14 +131,17 @@ toBE (TUnresolvedCommaNotation xs) = do
   -- TODO actually detect operator type
   let isInfixOp = const True
   let ci = toCommaInfix (processInnerInfix, classifyOp) xs
+  -- TODO add offset
   let a = fmap convCommaExpr ci
   let b = fmap (insertIndexers isInfixOp TIndex) a
   case b of
     Left ce -> throwError $ CommaError ce
-    Right x ->
+    Right x -> toBE $ uciToExprAST x
+    {--- For testing
       error ("FP15.Compiler.Reduction.BExpr.toBE: Unexpected comma notation:\n"
              ++ show ci ++ "\n" ++ show a ++ "\n" ++ show b ++ "\n"
              ++ disp (uciToExprAST x))
+    ---}
   where
     processInnerInfix (TUnresolvedInfixNotation xs') = Just (map Right xs')
     processInnerInfix (TUnresolvedCommaNotation xs') = Just xs'

@@ -28,7 +28,7 @@ data CError o a = TwoSidedCommas Int Int o
                 deriving (Eq, Ord, Show, Read)
 
 -- | Invariant: No consecutive 'CompN0'/'CompN1's
-data CommaInfix o a = CInfix ![CommaNode o a]
+data CommaInfix o a = CInfix ![CommaNode o a] -- TODO add offset
                    deriving (Eq, Ord, Show, Read)
 data CommaNode o a = CompN0 ![a]
                    | CompN1 !(CommaInfix o a) ![a]
@@ -88,16 +88,22 @@ walkCommaNode (OpN m a) = do
 
 walkCommaNode (CompN1 n e) = UComp1 <$> walkCommaInfix n <*> return e
 
-convCommaExpr :: CommaInfix o a -> UncommaInfix o a
-convCommaExpr e = evalState (walkCommaInfix e) (getBase e)
--- TODO doesn't handle missing operands properly
+-- TODO take offset as argument here
+convCommaExpr :: (Int, CommaInfix o a) -> UncommaInfix o a
+convCommaExpr (m0, e) = evalState (walkCommaInfix e) (getBase e + m0)
 
--- TODO leading commas
 toCommaInfix
   :: NodeClassifier o a c
       -> [Either Int c]
-      -> Either (CError o a) (CommaInfix o a)
-toCommaInfix p = fmap CInfix . parse p . map (classify p)
+      -> Either (CError o a) (Int, CommaInfix o a)
+toCommaInfix p (Left m0:xs) = toCommaInfix' p xs m0
+toCommaInfix p xs = toCommaInfix' p xs 0
+
+toCommaInfix'
+  :: NodeClassifier o a c -> [Either Int c] -> t
+     -> Either (CError o a) (t, CommaInfix o a)
+toCommaInfix' p xs m0
+  = fmap (\x -> (m0, CInfix x)) . parse p . map (classify p) $ xs
 
 classify :: NodeClassifier o a c -> Either Int c -> P3 o a
 classify _ (Left n) = C3 n
@@ -107,7 +113,8 @@ classify (_, f) (Right x)
       Right a -> N3 a
 
 collectCommas :: [P3 o a] -> Either (CError o a) [P4 o a]
-parse :: NodeClassifier o a c -> [P3 o a] -> Either (CError o a) [CommaNode o a]
+parse
+  :: NodeClassifier o a c -> [P3 o a] -> Either (CError o a) [CommaNode o a]
 
 collectCommas = leftPass . rightPass
 parse p = joinPass p <=< collectCommas
