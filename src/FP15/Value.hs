@@ -26,6 +26,8 @@ data XValue x
   | Extended !x  -- ^ Strict to make this case impossible for `XValue Void`.
   deriving (Eq, Ord, Show, Read, Generic, Functor)
 
+-- TODO Map type
+
 -- | A `Value' represents an FP15 value that is well-behaved: Has structural
 -- equality and comparison, is serializable, and can be literally expressed in
 -- FP15 code.

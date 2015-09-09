@@ -49,11 +49,14 @@ $neg = \~
 @hex = ("#x"|"#X") [0-9a-fA-F]+
 @integer = $neg? (@hex | @dec | @oct)
 
+@char = \#\\ ($ident_char+ | .)
+
 @frac = "." [0-9]+
 @exp = [eE] [\+\-]? [0-9]+
 @real = $neg? @dec (@frac @exp | @frac | @exp)
 
 @number = @integer | @real
+-- TODO char literals
 @hash = \# ($op_char | $ident_char+)
 
 @newlines = ($ws* \n)+ $ws*
@@ -67,6 +70,7 @@ tokens :-
   @module_part? @functional_part { act readFunctional }
   @module_part? @function_part { act readFunction }
   @number { act readNumber }
+  @char { act readChar }
   @hash { act readHash }
   \[ { push Bracket LBracket }
   \] { pop Bracket RBracket }
@@ -79,6 +83,8 @@ tokens :-
   \: { act $ const $ return Colon }
   \, { act $ const $ return Comma }
   \; { act $ const $ return Semicolon }
+  \$ { act $ const $ return Dollar }
+  \' { act $ const $ return Quote }
   . { act $ const $ return $ Illegal "Unexpected character." }
 
 {

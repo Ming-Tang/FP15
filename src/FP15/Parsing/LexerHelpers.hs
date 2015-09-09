@@ -1,14 +1,58 @@
 module FP15.Parsing.LexerHelpers where
+import Control.Monad(mplus)
 import Control.Monad.Error(throwError)
 import Data.Char(isDigit)
 import Data.List.Split
-import FP15.Types(Name(..))
+import FP15.Types(Name(..), Map)
 import FP15.Parsing.Types
+import qualified Data.Map as M
 
 type TokenResult = Either String TokenData
 -- | A 'TokenAction' is a function that takes a parsed string, and returns
 -- a partially-applied Token constructor.
 type TokenAction = String -> TokenResult
+
+octDigits, hexDigits :: String
+octDigits = ['0'..'7']
+hexDigits = ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F']
+
+charTable :: Map String Char
+charTable =
+  M.fromList [
+    ("alarm", '\x0007')
+  , ("backspace", '\x0008')
+  , ("delete", '\x007f')
+  , ("escape", '\x001b')
+  , ("linefeed", '\x000a')
+  , ("newline", '\x000a')
+  , ("nul", '\x0000')
+  , ("null", '\x0000')
+  , ("page", '\x000c')
+  , ("return", '\x000d')
+  , ("rubout", '\x007f')
+  , ("space", ' ')
+  , ("tab", '\t')
+  , ("vtab", '\v')
+  ]
+
+{--
+#\alarm
+#\backspace
+#\delete
+#\escape
+#\newline
+#\null
+#\return
+#\space
+#\tab
+; U+0007
+; U+0008
+; U+007F
+; U+001B
+; the linefeed character, U+000A ; the null character, U+0000
+; the return character, U+000D
+; the preferred way to write a space ; the tab character, U+0009
+ -}
 
 -- | The 'illegalToken' function emits an @Illegal@ token with the specified
 -- diagnostic message.
@@ -51,7 +95,7 @@ readString :: String -> TokenResult
 
 readOperator, readFunction, readFunctional :: String -> TokenResult
 readNumber' :: Bool -> String -> TokenResult
-readNumber, readHash :: String -> TokenResult
+readNumber, readHash, readChar :: String -> TokenResult
 
 readString s0@('"':s) = parse s "" where
   parse :: String -> String -> TokenResult
@@ -62,6 +106,7 @@ readString s0@('"':s) = parse s "" where
   parse ('\\':cs) !ss = parseEscape cs ss
   parse ('\"':_) _ = throwError "Impossible."
   parse (c:cs) ss = parse cs (c:ss)
+  -- TODO escapes
 
   parseEscape [] _ = illegalToken "Incomplete escape."
   parseEscape (c:(!cs)) !ss =
@@ -118,6 +163,16 @@ readNumber' n ('#':'X':hex) = return $ readInt n $ "0x" ++ hex
 
 readNumber' n s | 'e' `elem` s || 'E' `elem` s || '.' `elem` s = return $ readReal n s
              | otherwise = return $ readInt n s
+
+readChar ['#', '\\', c] = return (CharLiteral c)
+readChar ('#':'\\':cs) = maybe (illegalToken $ "Unrecognized char name: " ++ cs)
+                               (return . CharLiteral) res where
+  res = M.lookup cs charTable `mplus` tryHex
+  tryHex = case cs of
+             c0:cs' -> if elem c0 "uUxX" && all (`elem` hexDigits) cs'
+                       then Just (read $ "'\\x" ++ cs' ++ "'") else Nothing
+             _ -> Nothing
+readChar s0 = illegalToken "Invalid character literal."
 
 readHash "#" = return Hash
 readHash "#t" = return TrueLiteral

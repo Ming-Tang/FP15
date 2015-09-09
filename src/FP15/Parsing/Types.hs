@@ -36,6 +36,8 @@ data TokenData
   | Colon
   | Comma
   | Semicolon
+  | Dollar
+  | Quote
   | Hash
   deriving (Eq, Ord, Show, Read)
 
