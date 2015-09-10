@@ -56,3 +56,30 @@ See [Tutorial.md](./Tutorial.md).
 [FP]: https://en.wikipedia.org/wiki/FP_%28programming_language%29
 [pointfree]: https://wiki.haskell.org/Pointfree
 [tacit]: https://en.wikipedia.org/wiki/Tacit_programming
+
+Task List
+=========
+
+Language Features
+=================
+ - [X] Empty list items
+ - [X] Smart spitting
+ - [X] Infix notation
+ - [X] Comma notation
+ - [ ] Unicode escapes in string literals
+ - [ ] User-defined operator definitions
+ - [ ] User-defined ternary operator support
+ - [ ] Recursive block
+ - [ ] Local definitions
+ - [ ] User-defined functionals
+
+Runtime
+=======
+ - [ ] I/O support
+ - [ ] Reference cells and arrays
+ - [ ] Actual higher-order functions
+ - [ ] Uniqueness typing
+
+Code
+====
+ - [ ] Refactor name resolution so absolute and relative names are distinguhshed
