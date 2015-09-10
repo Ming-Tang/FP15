@@ -31,6 +31,7 @@ eof { Token EOF _ _ }
 "," { Token Comma _ _ }
 ";" { Token Semicolon _ _ }
 "#" { Token Hash _ _ }
+"#:" { Token Let _ _ }
 "=" { (viewOperatorS "=" -> Just $$) }
 
 function { (viewFunction -> Just $$) }
@@ -102,7 +103,7 @@ primary : function { TFunc $1 }
         | literal { $1 }
         | indexer { TIndex $1 }
 
-        | "#" "[" binding_list "]" primary { TLet $3 $5 }
+        | "#:" "[" binding_list "]" primary { TLet $3 $5 }
         | "(" f_infix_body ")" { parseFInfix $2 }
         | "(" functional primary_or_op_seq ")" { TApp $2 $3 }
         | "[" expr_list "]" { TFork $2 }

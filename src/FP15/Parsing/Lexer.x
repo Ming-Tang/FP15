@@ -56,8 +56,7 @@ $neg = \~
 @real = $neg? @dec (@frac @exp | @frac | @exp)
 
 @number = @integer | @real
--- TODO char literals
-@hash = \# ($op_char | $ident_char+)
+@hash = \# ($ident_char+)
 
 @newlines = ($ws* \n)+ $ws*
 
@@ -72,6 +71,7 @@ tokens :-
   @number { act readNumber }
   @char { act readChar }
   @hash { act readHash }
+  \#\: { act $ const $ return Let }
   \[ { push Bracket LBracket }
   \] { pop Bracket RBracket }
   \{ { push Brace LBrace }
