@@ -46,8 +46,8 @@ stdFFixes = map (\(o, p, a, f) -> (Id o, Fixity a p (stdName f))) [
   , ("<-", (8, 0), LeftAssoc, "elem")
 
   -- Range
-  , ("..", (8, 0), LeftAssoc, "range")
-  , ("..<", (8, 0), LeftAssoc, "xrange")
+  , ("..", (8, 0), VarAssoc, "range")
+  , ("...", (8, 0), VarAssoc, "xrange")
 
   -- Arithmetic
   , ("+", (9, 0), LeftAssoc, "add")

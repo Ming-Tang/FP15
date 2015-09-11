@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes, ExistentialQuantification, ImpredicativeTypes #-}
 module FP15.Evaluator.Standard where
 import Data.List(transpose)
+import Data.Either(either)
 import Prelude hiding (div)
 import Control.Monad(liftM)
 import qualified Data.Map.Strict as M
@@ -57,8 +58,10 @@ predOnly = ensureOut BoolC
 
 numListF :: ([Number] -> Number) -> FPFunc
 foldN :: (Number -> Number -> Number) -> Number -> FPFunc
+foldN1 :: (Number -> Number -> Number) -> FPFunc
 numListF f x = liftM (toFPValue . f) (ensure (ListC NumberC) x)
 foldN f x0 = numListF (foldl f x0)
+foldN1 f = numListF (foldl1 f)
 
 eq :: [Value] -> Bool
 eq (a:b:xs) | a == b = eq (b:xs)
@@ -108,8 +111,15 @@ standardEnv = M.mapKeys (\n -> "Std." ++ n) standardEnv'
 standardEnv' = M.fromList [
     ("_", return)
 
-  , ("range", func2 (enumFromTo :: Integer -> Integer -> [Integer]))
-  , ("xrange", func2 ((\x y -> [x..y - 1]) :: Integer -> Integer -> [Integer]))
+  , ("min", foldN1 min)
+  , ("max", foldN1 max)
+
+  --, ("range", func2 (enumFromTo :: Integer -> Integer -> [Integer]))
+  --, ("xrange", func2 ((\x y -> [x..y - 1]) :: Integer -> Integer -> [Integer]))
+
+  , ("range", func $ either (\(a, b) -> range a b (IntN 1)) (\(a, b, d) -> range a b d))
+  , ("xrange", func $ either (\(a, b) -> xrange a b (IntN 1)) (\(a, b, d) -> xrange a b d))
+
   , ("succ", func (`add` IntN 1))
   , ("pred", func (`sub` IntN 1))
   , ("isEven", func (even :: Integer -> Bool))
@@ -176,6 +186,7 @@ standardEnv' = M.fromList [
   , ("append", func (concat :: [[FPValue]] -> [FPValue]))
   , ("cross", func (sequence :: [[FPValue]] -> [[FPValue]]))
   , ("trans", func (transpose :: [[FPValue]] -> [[FPValue]]))
+  , ("zip", func (transpose :: [[FPValue]] -> [[FPValue]])) -- TODO trunc to min length
   , ("index", funcE index)
   , ("len", func (length :: [FPValue] -> Int))
   ] :: M.Map String FPFunc

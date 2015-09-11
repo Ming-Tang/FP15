@@ -1,4 +1,4 @@
-module FP15.Evaluator.Number where
+module FP15.Evaluator.Number (module FP15.Evaluator.Number, Number(..)) where
 import Prelude hiding (div)
 import Prelude as P
 import Data.Char(ord)
@@ -103,4 +103,24 @@ sqrt = numericRealUnOp P.sqrt
 sin = numericRealUnOp P.sin
 cos = numericRealUnOp P.cos
 tan = numericRealUnOp P.tan
+
+rng :: (Number -> Number -> Bool) -> Number -> Number -> Number -> [Number]
+rng p a b d = reverse $ snd $ until (\(x, _) -> not (p x b)) (\(x, ys) -> (add x d, x:ys)) (a, [])
+
+range = rng lessEq
+xrange = rng lessThan
+
+-- TODO dedicated module for number type
+-- TODO factor in Number to Value
+instance Num Number where
+  abs = FP15.Evaluator.Number.abs
+  negate = FP15.Evaluator.Number.neg
+  signum = FP15.Evaluator.Number.sgn
+  (+) = add
+  (*) = mul
+  (-) = sub
+  fromInteger = IntN
+
+instance Ord Number where
+  (<=) = lessEq
 
