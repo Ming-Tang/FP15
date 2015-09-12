@@ -1,9 +1,13 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 module FP15.Types (
   module X -- hlint told me to do this
 , module FP15.Types
 ) where
+import GHC.Generics(Generic)
+import Control.DeepSeq
 import Text.PrettyPrint
 import FP15.Disp as X
 import FP15.Name as X
@@ -28,23 +32,37 @@ type FlFixity = Fixity Fl
 
 -- * Expressions
 
--- | An FP15 expression with the specified name type.
-data Expr = Const Value
-          | App (LocName Fl) [Expr]
-          | Func (LocName F)
+data XExpr x f fl = Const Value
+                  | App fl [XExpr x f fl]
+                  | Func f
+                  | Ex !x
 
-deriving instance Eq Expr
-deriving instance Ord Expr
-deriving instance Show Expr
-deriving instance Read Expr
+deriving instance (Eq x, Eq f, Eq fl) => Eq (XExpr x f fl)
+deriving instance (Ord x, Ord f, Ord fl) => Ord (XExpr x f fl)
+deriving instance (Show x, Show f, Show fl) => Show (XExpr x f fl)
+deriving instance (Read x, Read f, Read fl) => Read (XExpr x f fl)
+deriving instance (Generic x, Generic f, Generic fl) => Generic (XExpr x f fl)
+instance (NFData x, NFData f, NFData fl) => NFData (XExpr x f fl) where
 
 prettyApp :: Doc -> [Doc] -> Doc
 prettyApp f xs = lparen <> fsep (map (nest 2) (f:xs)) <> rparen
 
-instance Disp Expr where
+instance (Disp f, Disp fl, Disp x) => Disp (XExpr x f fl) where
   pretty (Const v) = pretty v
-  pretty (App (Loc _ f) xs) = prettyApp (pretty f) $ map pretty xs
-  pretty (Func (Loc _ f)) = pretty f
+  pretty (App f xs) = prettyApp (pretty f) $ map pretty xs
+  pretty (Func f) = pretty f
+  pretty (Ex x) = pretty x
+
+newtype OnX f fl x = OnX { unOnX :: XExpr x f fl } deriving (Generic)
+
+instance Functor (OnX f fl) where
+  fmap f (OnX (Ex x)) = OnX $ Ex $ f x
+  fmap f (OnX (App fl xs)) = OnX $ App fl $ map (unOnX . fmap f . OnX) xs
+  fmap _ (OnX (Const v)) = OnX $ Const v
+  fmap _ (OnX (Func f)) = OnX $ Func f
+
+-- | An FP15 expression with the specified name type.
+type Expr = XExpr Void (LocName F) (LocName Fl)
 
 -- | An FP15 expressions with local bindings.
 data BExpr = BConst Value

@@ -13,6 +13,9 @@ deriving instance Show Void
 deriving instance Read Void
 deriving instance Generic Void
 
+instance Disp Void where
+  disp = undefined
+
 -- | The 'XValue' type is the base type for all FP15 values with extra cases of type @x@.
 -- The extra cases are for the FP15 runtime.
 data XValue x

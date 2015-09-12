@@ -20,10 +20,10 @@ module FP15.Compiler.Reduction (
 , toBaseExpr
 
 ) where
+import FP15.Types
 import FP15.Compiler.Reduction.BExpr
 import FP15.Compiler.Reduction.Resolution
 import FP15.Compiler.Reduction.BaseExpr
-import FP15.Types(BExpr(..), Expr(..))
 import Control.Applicative((<$>))
 
 -- | The 'liftBExpr' function converts an 'BExpr' to an 'Expr' and a set of

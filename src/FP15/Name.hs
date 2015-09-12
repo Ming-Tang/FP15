@@ -61,7 +61,7 @@ instance Disp SrcPos where
   -- file:12:3
   disp (SrcPos p l c (Just f)) = f ++ ":" ++ show l ++ ":" ++ show c
   -- <unknown>:12:3
-  disp (SrcPos p l c Nothing) = "<unknown>:" ++ show l ++ ":" ++ show c
+  disp (SrcPos p l c Nothing) = ":" ++ show l ++ ":" ++ show c
 
 -- | A value with optional location information attached.
 data Located a = Loc !(Maybe SrcPos) a
@@ -76,10 +76,7 @@ instance Show a => Show (Located a) where
 instance NFData a => NFData (Located a)
 
 instance Disp a => Disp (Located a) where
-  -- abc
-  pretty (Loc Nothing a) = pretty a <> text "@-"
-  -- abc@file:12:3
-  pretty (Loc (Just l) a) = pretty a <> text "@" <> pretty l
+  pretty (Loc _ a) = pretty a
 
 getSrcPos :: Located a -> Maybe SrcPos
 getLocated :: Located a -> a
@@ -92,6 +89,16 @@ noLoc = Loc Nothing
 
 withSameLoc :: Located a -> b -> Located b
 withSameLoc o x = fmap (const x) o
+
+-- | Wrapper to tell 'Disp' to include location information.
+newtype DispLoc a = DispLoc (Located a)
+                  deriving (Eq, Ord, Show, Read, Functor, Generic)
+
+instance Disp a => Disp (DispLoc a) where
+  -- abc
+  pretty (DispLoc (Loc Nothing a)) = pretty a
+  -- abc@file:12:3
+  pretty (DispLoc (Loc (Just l) a)) = pretty a <> text "@" <> pretty l
 
 type LocId a = Located (Id a)
 type LocName a = Located (Name a)

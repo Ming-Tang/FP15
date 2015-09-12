@@ -18,6 +18,8 @@ class Disp a where
   disp = show . pretty
   pretty = text . disp
 
+-- TODO more ways to configure disp: depth control, show location, etc.
+
 instance Disp () where
   disp = show
 
