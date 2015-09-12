@@ -22,6 +22,7 @@ raiseTower :: Number -> NumTower -> Number
 -- numerical tower
 coercePair :: Number -> Number -> (Number, Number)
 
+fromChar :: Char -> Integer
 fromChar = fromIntegral . ord
 
 getTower (CharN _) = CharT
@@ -41,6 +42,7 @@ raiseTower a@(RealN _) IntT = a
 raiseTower a@(RealN _) RealT = a
 
 -- * Operator Creation
+numericUnOp' :: (Integer -> a) -> (Double -> a) -> Number -> a
 
 numericBinOp' :: (Integer -> Integer -> a)
                  -> (Double -> Double -> a)
@@ -70,6 +72,10 @@ numericBinOp' f g a b = let numPairC = Args2C NumberC NumberC in
     _ -> error "impossible: coercePair did something wrong"
 
 
+numericUnOp :: (Integer -> Integer) -> (Double -> Double) -> Number -> Number
+numericRealUnOp :: (Double -> Double) -> Number -> Number
+numericBinRealOp :: (Double -> Double -> Double) -> Number -> Number -> Number
+
 numericUnOp f g = numericUnOp' (IntN . f) (RealN . g)
 numericBinOp f g = numericBinOp' (ub IntN f) (ub RealN g) where ub = (.) (.) (.)
 numericRealUnOp f = numericUnOp' (RealN . f . fromIntegral) (RealN . f)
@@ -84,6 +90,9 @@ isZero (IntN 0) = True
 isZero (RealN 0) = True
 isZero _ = False
 
+add, sub, mul, div :: Number -> Number -> Number
+sgn, abs, neg :: Number -> Number
+
 add = numericBinOp (+) (+)
 sub = numericBinOp (-) (-)
 mul = numericBinOp (*) (*)
@@ -92,6 +101,7 @@ sgn = numericUnOp signum signum
 abs = numericUnOp P.abs P.abs
 neg = numericUnOp P.negate P.negate
 
+greaterThan, lessThan, greaterEq, lessEq, equals, notEquals :: Number -> Number -> Bool
 greaterThan = numericBinOp' (>) (>)
 lessThan = numericBinOp' (<) (<)
 greaterEq = numericBinOp' (>=) (>=)
@@ -99,8 +109,10 @@ lessEq = numericBinOp' (<=) (<=)
 equals = numericBinOp' eq' eq' where eq' x y = x <= y && x >= y
 notEquals = numericBinOp' ne' ne' where ne' x y = not(x <= y && x >= y)
 
+pow :: Number -> Number -> Number
 pow = numericBinOp (^) (**)
 
+sqrt, sin, cos, tan :: Number -> Number
 sqrt = numericRealUnOp P.sqrt
 sin = numericRealUnOp P.sin
 cos = numericRealUnOp P.cos
@@ -109,6 +121,7 @@ tan = numericRealUnOp P.tan
 rng :: (Number -> Number -> Bool) -> Number -> Number -> Number -> [Number]
 rng p a b d = reverse $ snd $ until (\(x, _) -> not (p x b)) (\(x, ys) -> (add x d, x:ys)) (a, [])
 
+range, xrange :: Number -> Number -> Number -> [Number]
 range = rng lessEq
 xrange = rng lessThan
 
