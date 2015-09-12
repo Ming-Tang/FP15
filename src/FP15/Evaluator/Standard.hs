@@ -1,7 +1,6 @@
 {-# LANGUAGE RankNTypes, ExistentialQuantification, ImpredicativeTypes #-}
 module FP15.Evaluator.Standard where
-import Data.List(transpose)
-import Data.Either(either)
+import Data.List(transpose, sort)
 import Prelude hiding (div)
 import Control.Monad(liftM)
 import qualified Data.Map.Strict as M
@@ -72,11 +71,15 @@ cons :: (FPValue, [FPValue]) -> [FPValue]
 decons :: Cons FPValue [FPValue] -> (FPValue, [FPValue])
 distl :: (FPValue, [FPValue]) -> [(FPValue, FPValue)]
 distr :: ([FPValue], FPValue) -> [(FPValue, FPValue)]
+hd :: (Cons FPValue [FPValue]) -> FPValue
+tl :: (Cons FPValue [FPValue]) -> [FPValue]
 
 cons (a, b) = a : b
 decons (Cons (x, xs)) = (x, xs)
 distl (a, xs) = map (\x -> (a, x)) xs
 distr (xs, a) = map (\x -> (x, a)) xs
+hd (Cons (a, b)) = a
+tl (Cons (a, b)) = b
 
 subLike :: (b -> a -> b) -> Cons b [a] -> b
 subLike f (Cons (a, b)) = foldl f a b
@@ -105,6 +108,11 @@ index (xs, i) = case res of
                       get ([], _) = Nothing
                       get (a:_, _) = undefined
 
+zipn :: [[a]] -> [[a]]
+zipn xs = if all (not . null) xs
+          then (map head xs) : (zipn (map tail xs))
+          else []
+
 standardEnv', standardEnv :: M.Map String FPFunc
 
 standardEnv = M.mapKeys (\n -> "Std." ++ n) standardEnv'
@@ -113,9 +121,6 @@ standardEnv' = M.fromList [
 
   , ("min", foldN1 min)
   , ("max", foldN1 max)
-
-  --, ("range", func2 (enumFromTo :: Integer -> Integer -> [Integer]))
-  --, ("xrange", func2 ((\x y -> [x..y - 1]) :: Integer -> Integer -> [Integer]))
 
   , ("range", func $ either (\(a, b) -> range a b (IntN 1)) (\(a, b, d) -> range a b d))
   , ("xrange", func $ either (\(a, b) -> xrange a b (IntN 1)) (\(a, b, d) -> xrange a b d))
@@ -147,13 +152,14 @@ standardEnv' = M.fromList [
   , ("lt", func2 lessThan)
   , ("ge", func2 greaterEq)
   , ("le", func2 lessEq)
-  -- TODO numeric equality
-
-  , ("f", func $ (const False :: FPValue -> Bool))
-  , ("t", func $ (const True :: FPValue -> Bool))
+  , ("neq", func2 equals)
+  , ("nne", func2 notEquals)
+  -- TODO range
 
   , ("cons", func cons)
   , ("decons", func decons)
+  , ("hd", func hd)
+  , ("tl", func tl)
 
   , ("eq", func eq)
   , ("ne", func (not . eq))
@@ -180,13 +186,15 @@ standardEnv' = M.fromList [
   , ("isEmpty", checkFunc EmptyC)
   , ("isCons", checkFunc $ ConsC AnyC listAnyC)
 
+  , ("sort", func (sort :: [Value] -> [Value]))
   , ("distl", func distl)
-  , ("distr", func distl)
+  , ("distr", func distr)
+  , ("rev", func (reverse :: [FPValue] -> [FPValue]))
   , ("reverse", func (reverse :: [FPValue] -> [FPValue]))
   , ("append", func (concat :: [[FPValue]] -> [FPValue]))
   , ("cross", func (sequence :: [[FPValue]] -> [[FPValue]]))
   , ("trans", func (transpose :: [[FPValue]] -> [[FPValue]]))
-  , ("zip", func (transpose :: [[FPValue]] -> [[FPValue]])) -- TODO trunc to min length
+  , ("zip", func (zipn :: [[FPValue]] -> [[FPValue]]))
   , ("index", funcE index)
   , ("len", func (length :: [FPValue] -> Int))
   ] :: M.Map String FPFunc

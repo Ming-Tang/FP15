@@ -1,5 +1,5 @@
-{-# LANGUAGE Safe, GADTs, RankNTypes, ExistentialQuantification #-}
-{-# LANGUAGE ImpredicativeTypes, StandaloneDeriving #-}
+{-# LANGUAGE Safe, GADTs #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 module FP15.Evaluator.ContractType  where
 import Data.These(These(..))

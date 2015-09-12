@@ -96,6 +96,8 @@ greaterThan = numericBinOp' (>) (>)
 lessThan = numericBinOp' (<) (<)
 greaterEq = numericBinOp' (>=) (>=)
 lessEq = numericBinOp' (<=) (<=)
+equals = numericBinOp' eq' eq' where eq' x y = x <= y && x >= y
+notEquals = numericBinOp' ne' ne' where ne' x y = not(x <= y && x >= y)
 
 pow = numericBinOp (^) (**)
 
