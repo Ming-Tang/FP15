@@ -55,12 +55,13 @@ ensureIn = (`ensureFunc` AnyC)
 ensureOut = (AnyC `ensureFunc`)
 predOnly = ensureOut BoolC
 
-numListF :: ([Number] -> Number) -> FPFunc
+numListF, numNEListF :: ([Number] -> Number) -> FPFunc
 foldN :: (Number -> Number -> Number) -> Number -> FPFunc
 foldN1 :: (Number -> Number -> Number) -> FPFunc
 numListF f x = liftM (toFPValue . f) (ensure (ListC NumberC) x)
+numNEListF f x = liftM (toFPValue . f) (ensure (NonEmptyListC NumberC) x)
 foldN f x0 = numListF (foldl f x0)
-foldN1 f = numListF (foldl1 f)
+foldN1 f = numNEListF (foldl1 f)
 
 eq :: [Value] -> Bool
 eq (a:b:xs) | a == b = eq (b:xs)

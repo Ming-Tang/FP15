@@ -56,6 +56,7 @@ data Contract t where
   StringC :: Contract Str
 
   ListC :: Contract a -> Contract [a]
+  -- TODO maybe use 'Data.List.NonEmpty'?
   NonEmptyListC :: Contract a -> Contract [a]
 
   EmptyC :: Contract ()
