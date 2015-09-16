@@ -55,6 +55,8 @@ instance (Disp f, Disp fl, Disp x) => Disp (XExpr x f fl) where
   pretty (Func f) = pretty f
   pretty (Ex x) = pretty x
 
+-- | 'Functor' implementation of any 'XExpr' where 'fmap' applies on the 'Ex'
+-- case.
 newtype OnX f fl x = OnX { unOnX :: XExpr x f fl } deriving (Generic)
 
 instance Functor (OnX f fl) where
@@ -63,19 +65,16 @@ instance Functor (OnX f fl) where
   fmap _ (OnX (Const v)) = OnX $ Const v
   fmap _ (OnX (Func f)) = OnX $ Func f
 
+-- | The 'mapEx' function converts the 'Ex' part of an 'XExpr'.
+mapEx :: (x -> y) -> XExpr x f fl -> XExpr y f fl
+mapEx f = unOnX . fmap f . OnX
+{-# INLINE mapEx #-}
+
 -- | An FP15 expression with the specified name type.
 type Expr = XExpr Void (LocName F) (LocName Fl)
 
 -- | An FP15 expressions with local bindings.
-data BExpr = BConst Value
-           | BApp (LocName Fl) [BExpr]
-           | BFunc (LocName F)
-           | BLet [(LocId F, BExpr)] BExpr
-
-deriving instance Eq BExpr
-deriving instance Ord BExpr
-deriving instance Show BExpr
-deriving instance Read BExpr
+type BExpr = XExpr Void (LocName F) (LocName Fl)
 
 -- | An FP15 expression as seen by the parser.
 data ExprAST = TValue Value

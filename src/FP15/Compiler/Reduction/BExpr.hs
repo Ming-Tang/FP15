@@ -9,7 +9,7 @@ import Data.Maybe(isJust)
 import Data.List.Split
 import Control.Monad.Error
 import Control.Monad.Trans.Reader
-import Control.Applicative
+import Control.Applicative hiding (Const)
 import FP15.Value
 import FP15.Types
 import FP15.Compiler.Types
@@ -111,16 +111,16 @@ convExprAST env ast = runReaderT (toBE =<< doSmartSplit ast) env
 
 toBE :: LookupOp e => ExprAST -> BResult e BExpr
 toBE TId = return pId
-toBE (TValue v) = return $ BConst v
-toBE (TFunc f) = return $ BFunc f
+toBE (TValue v) = return $ Const v
+toBE (TFunc f) = return $ Func f
 toBE (TOperator o) = do
   (Loc _ (Fixity _ _ f)) <- lookupFOpOnly o
-  return $ BFunc $ withSameLoc o f
-toBE (TDotOperator f) = return $ BFunc f
-toBE (TApp fl es) = BApp fl <$> mapM toBE es
+  return $ Func $ withSameLoc o f
+toBE (TDotOperator f) = return $ Func f
+toBE (TApp fl es) = App fl <$> mapM toBE es
 toBE (TIndex i) =
-  return (baseA "Fork" [ pId, BConst $ Int $ fromIntegral i]
-          |> (BFunc $ stdNameL "index"))
+  return (baseA "Fork" [ pId, Const $ Int $ fromIntegral i]
+          |> (Func $ stdNameL "index"))
 
 toBE (TIf p a b) = base "If" <*> mapM toBE [p, a, b]
 toBE (TFork es) = base "Fork" <*> mapM toBE es
@@ -249,16 +249,16 @@ toPrecNodeFl x = return $ TermN x
 fromTreeFl :: LookupOp e => Tree (ResolvedOp Fl) ExprAST -> BResult e BExpr
 fromTreeFl (Term Nothing) = throwError $ FlPartialOpNotAllowed Nothing
 fromTreeFl (Term (Just x)) = toBE x
-fromTreeFl (Pre (getLocResolvedId -> o) x) = (BApp o . (:[])) <$> fromTreeFl x
+fromTreeFl (Pre (getLocResolvedId -> o) x) = (App o . (:[])) <$> fromTreeFl x
 fromTreeFl (Inf x ro@(getLocResolvedId -> o) y)
   = o2 <$> ce le (fromTreeFl x) <*> ce re (fromTreeFl y) where
-  o2 a b = BApp o [a, b]
+  o2 a b = App o [a, b]
   (le, re) = (Left (ro, y), Right (x, ro))
   ce c = (`catchError` refineE c)
   refineE e (FlPartialOpNotAllowed Nothing)
     = throwError $ FlPartialOpNotAllowed $ Just e
   refineE _ e = throwError e
-fromTreeFl (Var (getLocResolvedId -> o) xs) = BApp o <$> mapM fromTreeFl xs
+fromTreeFl (Var (getLocResolvedId -> o) xs) = App o <$> mapM fromTreeFl xs
 
 -- *** @()@-Infix Notation
 
@@ -284,13 +284,13 @@ toPrecNodeF x = return $ TermN x
 fromTreeF :: LookupOp e => Tree (ResolvedOp F) ExprAST -> BResult e BExpr
 fromTreeF (Pre (getLocResolvedId -> p) x) = do
   a <- fromTreeF x
-  return $ a |> BFunc p
+  return $ a |> Func p
 fromTreeF (Inf x (getLocResolvedId -> o) y) = do
   (a, b) <- (,) <$> fromTreeF x <*> fromTreeF y
-  return $ bFork [a, b] |> BFunc o
+  return $ bFork [a, b] |> Func o
 fromTreeF (Var (getLocResolvedId -> o) xs) = do
   xs' <- mapM fromTreeF xs
-  return $ bFork xs' |> BFunc o
+  return $ bFork xs' |> Func o
 fromTreeF (Term (Just x)) = toBE x
 fromTreeF (Term Nothing) = return pId
 
@@ -315,16 +315,16 @@ lookupOpOnly o = do
 -- * Primitive Symbols
 
 base :: Monad m => String -> m ([BExpr] -> BExpr)
-base = return . BApp . stdNameL
+base = return . App . stdNameL
 
 baseA :: String -> [BExpr] -> BExpr
-baseA = BApp . stdNameL
+baseA = App . stdNameL
 
 stdNameL :: String -> LocName f
 stdNameL = Loc Nothing . stdName
 
 pId :: BExpr
-pId = BFunc $ stdNameL "_"
+pId = Func $ stdNameL "_"
 
 boCompose :: LocName Unknown
 boCompose = stdNameL ""
@@ -334,10 +334,10 @@ bnCompose = stdNameL "Compose"
 bnFork = stdNameL "Fork"
 
 bFork :: [BExpr] -> BExpr
-bFork = BApp bnFork
+bFork = App bnFork
 
 bC2 :: BExpr -> BExpr -> BExpr
-bC2 a b = BApp bnCompose [a, b]
+bC2 a b = App bnCompose [a, b]
 
 (|>) :: BExpr -> BExpr -> BExpr
 (|>) = bC2

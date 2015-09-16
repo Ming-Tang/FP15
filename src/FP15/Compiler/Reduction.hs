@@ -24,12 +24,8 @@ import FP15.Types
 import FP15.Compiler.Reduction.BExpr
 import FP15.Compiler.Reduction.Resolution
 import FP15.Compiler.Reduction.BaseExpr
-import Control.Applicative((<$>))
 
 -- | The 'liftBExpr' function converts an 'BExpr' to an 'Expr' and a set of
 -- lifted declarations.
 liftBExpr :: BExpr -> Either () Expr
-liftBExpr (BConst x) = return $ Const x
-liftBExpr (BApp f xs) = App f <$> mapM liftBExpr xs
-liftBExpr (BFunc f) = return $ Func f
-liftBExpr (BLet _ _) = error "liftBExpr: BLet"
+liftBExpr = return . mapEx undefined

@@ -54,7 +54,7 @@ main = do
   let c = makeCompiledModule m'
   let cms' = addModule (ssMN $ rmsSS m') c standardCMS
   let (CompiledModuleSet cmis) = cms'
-  print $ vcat $ prettyCMILines (M ["Main"]) (cmis ! (M ["Main"]))
+  -- print $ vcat $ prettyCMILines (M ["Main"]) (cmis ! (M ["Main"]))
   let fl = unwrap $ translateCMS cms'
   let s = transMap standardEnv fl
   res <- fmap unwrap $ runErrorT $ runFP $ (s ! "Main.main") (List [])
