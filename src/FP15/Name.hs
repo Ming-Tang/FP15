@@ -119,6 +119,11 @@ data FlOp
 -- | Either function or functional operator.
 data Unknown
 
+-- | Name is relative.
+data Relative
+-- | Name is absolute.
+data Absolute
+
 deriving instance Eq F
 deriving instance Ord F
 deriving instance Show F
@@ -143,6 +148,11 @@ deriving instance Eq Unknown
 deriving instance Ord Unknown
 deriving instance Show Unknown
 deriving instance Read Unknown
+
+deriving instance Eq Absolute
+deriving instance Ord Absolute
+deriving instance Show Absolute
+deriving instance Read Absolute
 
 -- ** Type Aliases
 
