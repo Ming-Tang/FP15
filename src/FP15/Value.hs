@@ -1,20 +1,13 @@
-{-# LANGUAGE Safe, StandaloneDeriving, FlexibleInstances, DeriveGeneric, DeriveFunctor, EmptyDataDecls #-}
+{-# LANGUAGE Safe #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveFunctor #-}
 module FP15.Value where
 import GHC.Generics
 import Control.DeepSeq
 import FP15.Disp
 import Text.PrettyPrint
-
--- | The 'Void' type contains no values.
-data Void
-deriving instance Eq Void
-deriving instance Ord Void
-deriving instance Show Void
-deriving instance Read Void
-deriving instance Generic Void
-
-instance Disp Void where
-  disp = undefined
+import Data.Void(Void)
 
 -- | The 'XValue' type is the base type for all FP15 values with extra cases of type @x@.
 -- The extra cases are for the FP15 runtime.

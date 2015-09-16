@@ -3,23 +3,25 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 module FP15.Types (
-  module X -- hlint told me to do this
+  module FP15.Disp
+, module FP15.Name
+, module FP15.Value
 , module FP15.Types
+, Void
+, Map
 ) where
 import GHC.Generics(Generic)
 import Control.DeepSeq
 import Text.PrettyPrint
-import FP15.Disp as X
-import FP15.Name as X
-import FP15.Value as X
-import qualified Data.Map.Strict as M
+import FP15.Disp
+import FP15.Name
+import FP15.Value
+import Data.Map.Strict(Map)
 import qualified Data.List.NonEmpty as NE
+import Data.Void(Void)
 
 -- * Type Synonyms
 -- Short identifiers are needed because of 80-char line length limit.
-
--- | A strict map.
-type Map k v = M.Map k v
 
 -- | A strict set.
 type Set e = Map e ()

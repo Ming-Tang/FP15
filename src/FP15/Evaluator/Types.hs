@@ -1,6 +1,5 @@
-{-# LANGUAGE Safe, GADTs, RankNTypes, ExistentialQuantification #-}
-{-# LANGUAGE ImpredicativeTypes, StandaloneDeriving #-}
-{-# LANGUAGE FlexibleInstances, DeriveGeneric #-}
+{-# LANGUAGE Safe #-}
+{-# LANGUAGE DeriveGeneric #-}
 module FP15.Evaluator.Types (
   module FP15.Evaluator.Types
 , module FP15.Evaluator.RuntimeError

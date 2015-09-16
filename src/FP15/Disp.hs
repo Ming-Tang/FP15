@@ -3,6 +3,7 @@
 module FP15.Disp where
 import Text.PrettyPrint
 import qualified Data.Map as M
+import Data.Void(Void)
 
 -- * The Disp Typeclass
 
@@ -19,6 +20,9 @@ class Disp a where
   pretty = text . disp
 
 -- TODO more ways to configure disp: depth control, show location, etc.
+
+instance Disp Void where
+  disp = undefined
 
 instance Disp () where
   disp = show

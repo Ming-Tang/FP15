@@ -7,6 +7,7 @@ module FP15.Compiler.CommaNotation (
 
 , GetSecondLevel
 , OpClassifier
+, OpKindClassifier
 , NodeClassifier
 
 , getOffset
