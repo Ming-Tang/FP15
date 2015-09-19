@@ -6,11 +6,11 @@ import Text.PrettyPrint
 import Control.Applicative hiding (Const)
 import FP15.Standard(stdName, stdFls)
 import FP15.Evaluator.Types as E
-import FP15.Types hiding (Expr(..))
+import FP15.Types hiding (Expr)
 import qualified FP15.Types as T
 
-data BaseExprError = InvalidFl (LocName Fl)
-                   | InvalidFlArity (LocName Fl) Int
+data BaseExprError = InvalidFl (ALocName Fl)
+                   | InvalidFlArity (ALocName Fl) Int
                    | BaseF
                    deriving (Eq, Ord, Show, Read)
 
@@ -21,6 +21,7 @@ instance Disp BaseExprError where
   pretty BaseF = text "Base functional found."
 
 toBaseExpr :: T.Expr -> Either BaseExprError BaseExpr
+toBaseExpr (T.Ex _) = error "Ex"
 toBaseExpr (T.Const c) = return $ E.Const c
 toBaseExpr (T.Func lf) = return $ E.Func $ fmap disp lf
 

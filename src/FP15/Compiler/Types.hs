@@ -27,8 +27,8 @@ type WithImpSrc a = (Located Import, a)
 
 -- | Names that come from imports.
 newtype ImportedNames
-  = Imported (ModuleBody Name (NE (WithImpSrc FName))
-                              (NE (WithImpSrc FlName))
+  = Imported (ModuleBody Name (NE (WithImpSrc AFName))
+                              (NE (WithImpSrc AFlName))
                               (NE (WithImpSrc FFixity))
                               (NE (WithImpSrc FlFixity)))
   deriving (Eq, Ord, Show, Read)

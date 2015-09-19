@@ -10,23 +10,23 @@ import FP15.Types
 -- functions and functionals share the same namespace.
 
 class LookupF e where
-  lookupF :: e -> FName -> Maybe FName
+  lookupF :: e -> RFName -> Maybe (FName Abs)
 
 class LookupFl e where
-  lookupFl :: e -> FlName -> Maybe FlName
+  lookupFl :: e -> RFlName -> Maybe (FlName Abs)
 
 class LookupOp e where
-  lookupOp :: e -> Name Unknown -> Maybe (Either FFixity FlFixity)
+  lookupOp :: e -> UName -> Maybe (Either FFixity FlFixity)
 
 class (LookupF e, LookupFl e, LookupOp e) => Lookup e where
 
-instance LookupF (M.Map FName FName) where
+instance LookupF (M.Map RFName AFName) where
   lookupF = flip M.lookup
 
-instance LookupFl (M.Map FlName FlName) where
+instance LookupFl (M.Map RFlName AFlName) where
   lookupFl = flip M.lookup
 
-instance LookupOp (M.Map (Name Unknown) (Either FFixity FlFixity)) where
+instance LookupOp (M.Map UName (Either FFixity FlFixity)) where
   lookupOp = flip M.lookup
 
 -- ** Lookup Helpers
@@ -37,15 +37,15 @@ data EmptyLookup = EmptyLookup deriving (Eq, Ord, Enum, Bounded, Show, Read)
 
 instance LookupF EmptyLookup where
   lookupF _ _ = Nothing
-  {-# SPECIALIZE INLINE lookupF :: EmptyLookup -> FName -> Maybe FName #-}
+  {-# SPECIALIZE INLINE lookupF :: EmptyLookup -> RFName -> Maybe (FName Abs) #-}
 
 instance LookupFl EmptyLookup where
   lookupFl _ _ = Nothing
-  {-# SPECIALIZE INLINE lookupFl :: EmptyLookup -> FlName -> Maybe FlName #-}
+  {-# SPECIALIZE INLINE lookupFl :: EmptyLookup -> RFlName -> Maybe (FlName Abs) #-}
 
 instance LookupOp EmptyLookup where
   lookupOp _ _ = Nothing
-  {-# SPECIALIZE INLINE lookupOp :: EmptyLookup -> Name Unknown -> Maybe (Either FFixity FlFixity) #-}
+  {-# SPECIALIZE INLINE lookupOp :: EmptyLookup -> UName -> Maybe (Either FFixity FlFixity) #-}
 
 -- | The 'FallbackLookup' chains two lookup instances. When looking up from a
 -- @(FallbackLookup a b)@, the lookup is attempted from @a@, and if it fails,
@@ -58,11 +58,11 @@ _fb lo lo' (Fallback a b) n = lo a n `mplus` lo' b n
 
 instance (LookupF a, LookupF b) => LookupF (FallbackLookup a b) where
   lookupF = _fb lookupF lookupF
-  {-# SPECIALIZE INLINE lookupF :: (LookupF a, LookupF b) => FallbackLookup a b -> FName -> Maybe FName #-}
+  {-# SPECIALIZE INLINE lookupF :: (LookupF a, LookupF b) => FallbackLookup a b -> RFName -> Maybe (FName Abs) #-}
 
 instance (LookupFl a, LookupFl b) => LookupFl (FallbackLookup a b) where
   lookupFl = _fb lookupFl lookupFl
-  {-# SPECIALIZE INLINE lookupFl :: (LookupFl a, LookupFl b) => FallbackLookup a b -> FlName -> Maybe FlName #-}
+  {-# SPECIALIZE INLINE lookupFl :: (LookupFl a, LookupFl b) => FallbackLookup a b -> RFlName -> Maybe (FlName Abs) #-}
 
 instance (LookupOp a, LookupOp b) => LookupOp (FallbackLookup a b) where
   lookupOp = _fb lookupOp lookupOp

@@ -71,17 +71,17 @@ mapEx f = unOnX . fmap f . OnX
 {-# INLINE mapEx #-}
 
 -- | An FP15 expression with the specified name type.
-type Expr = XExpr Void (LocName F) (LocName Fl)
+type Expr = XExpr Void (LocName F Abs) (LocName Fl Abs)
 
 -- | An FP15 expressions with local bindings.
-type BExpr = XExpr Void (LocName F) (LocName Fl)
+type BExpr = XExpr Void (LocName F Rel) (LocName Fl Rel)
 
 -- | An FP15 expression as seen by the parser.
 data ExprAST = TValue Value
-             | TFunc (LocName F)
-             | TOperator (LocName Unknown)
-             | TDotOperator (LocName F)
-             | TApp (LocName Fl) [ExprAST]
+             | TFunc (LocName F Rel)
+             | TOperator (LocName Unknown Rel)
+             | TDotOperator (LocName F Rel)
+             | TApp (LocName Fl Rel) [ExprAST]
              | TIndex Int
              | TId
 
@@ -154,7 +154,7 @@ data OperatorType = Prefix | LeftAssoc | RightAssoc | VarAssoc
                   deriving (Eq, Ord, Show, Read)
 
 -- | Fixity declaration.
-data Fixity a = Fixity OperatorType Prec (Name a)
+data Fixity a = Fixity OperatorType Prec (Name (a, Abs))
               deriving (Eq, Ord, Show, Read)
 
 type LocFixity a = Located (Fixity a)

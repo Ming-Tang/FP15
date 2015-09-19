@@ -36,7 +36,7 @@ data BError
   = ErrorMsg !String !(Maybe ExprAST)
 
   -- | The specified operator cannot be resolved.
-  | OpNotFound !(LocName Unknown)
+  | OpNotFound !(ULocName)
 
   -- | A precedence parsing error has occurred while parsing
   -- a '()'-expression.
@@ -86,14 +86,14 @@ instance Disp BError where
 
 -- | An 'ResolvedOp' represents an operator (with location of mention) that has
 -- been successfully resolved to an identifier.
-data ResolvedOp f = ResolvedOp { getOp :: !(LocName Unknown)
-                               , getResolvedId :: !(Name f) }
+data ResolvedOp f = ResolvedOp { getOp :: !(ULocName)
+                               , getResolvedId :: !(AName f) }
                   deriving (Eq, Ord, Show, Read)
 
-instance Same (ResolvedOp f) (Name Unknown, Name f) where
+instance Same (ResolvedOp f) (UName, AName f) where
   key (ResolvedOp (getLocated -> x) n) = (x, n)
 
-getLocResolvedId :: ResolvedOp f -> Located (Name f)
+getLocResolvedId :: ResolvedOp f -> Located (AName f)
 getLocResolvedId (ResolvedOp (Loc l _) i) = Loc l i
 
 -- * Functions
@@ -222,7 +222,7 @@ ucnToExprAST (UOp _ o) = [o]
 
 -- ** Precedence Parsing
 
-precNodeFromFixity :: LocName Unknown -> Located (Fixity f)
+precNodeFromFixity :: ULocName -> Located (Fixity f)
                     -> PrecNode (ResolvedOp f) a
 precNodeFromFixity o o'@(Loc _ (Fixity typ p oa)) =
   case typ of
@@ -296,7 +296,7 @@ fromTreeF (Term Nothing) = return pId
 
 -- * Lookups
 
-lookupFOpOnly :: LookupOp e => LocName Unknown -> BResult e (LocFixity F)
+lookupFOpOnly :: LookupOp e => ULocName -> BResult e (LocFixity F)
 lookupFOpOnly o = do
   e <- ask
   case lookupOp e $ getLocated o of
@@ -304,7 +304,7 @@ lookupFOpOnly o = do
     Just (Right (Fixity _ _ a)) -> throwError $ FlOpNotAllowed $ ResolvedOp o a
     Just (Left f) -> return $ withSameLoc o f
 
-lookupOpOnly :: LookupOp e => LocName Unknown
+lookupOpOnly :: LookupOp e => ULocName
                 -> BResult e (Either FFixity FlFixity)
 lookupOpOnly o = do
   e <- ask
@@ -320,16 +320,16 @@ base = return . App . stdNameL
 baseA :: String -> [BExpr] -> BExpr
 baseA = App . stdNameL
 
-stdNameL :: String -> LocName f
+stdNameL :: String -> RLocName f
 stdNameL = Loc Nothing . stdName
 
 pId :: BExpr
 pId = Func $ stdNameL "_"
 
-boCompose :: LocName Unknown
+boCompose :: ULocName
 boCompose = stdNameL ""
 
-bnCompose, bnFork :: LocName Fl
+bnCompose, bnFork :: RLocName Fl
 bnCompose = stdNameL "Compose"
 bnFork = stdNameL "Fork"
 

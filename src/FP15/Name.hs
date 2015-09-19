@@ -101,7 +101,11 @@ instance Disp a => Disp (DispLoc a) where
   pretty (DispLoc (Loc (Just l) a)) = pretty a <> text "@" <> pretty l
 
 type LocId a = Located (Id a)
-type LocName a = Located (Name a)
+type LocName a r = Located (Name (a, r))
+type ULocName = Located (Name Unknown)
+
+type RLocName a = LocName a Rel
+type ALocName a = LocName a Abs
 
 -- * Type Tags
 -- These empty datatypes are for tagging name types, to prevent programming
@@ -120,9 +124,9 @@ data FlOp
 data Unknown
 
 -- | Name is relative.
-data Relative
+data Rel
 -- | Name is absolute.
-data Absolute
+data Abs
 
 deriving instance Eq F
 deriving instance Ord F
@@ -149,10 +153,15 @@ deriving instance Ord Unknown
 deriving instance Show Unknown
 deriving instance Read Unknown
 
-deriving instance Eq Absolute
-deriving instance Ord Absolute
-deriving instance Show Absolute
-deriving instance Read Absolute
+deriving instance Eq Rel
+deriving instance Ord Rel
+deriving instance Show Rel
+deriving instance Read Rel
+
+deriving instance Eq Abs
+deriving instance Ord Abs
+deriving instance Show Abs
+deriving instance Read Abs
 
 -- ** Type Aliases
 
@@ -161,9 +170,22 @@ type FlId = Id Fl
 type FOpId = Id FOp
 type FlOpId = Id FlOp
 
-type FName = Name F
-type FlName = Name Fl
-type FOpName = Name FOp
-type FlOpName = Name FlOp
+type RName a = Name (a, Rel)
+type AName a = Name (a, Abs)
 
-type UnknownName = Name Unknown
+type FName r = Name (F, r)
+type FlName r = Name (Fl, r)
+type FOpName r = Name (FOp, r)
+type FlOpName r = Name (FlOp, r)
+
+type RFName = FName Rel
+type RFlName = FlName Rel
+type RFOpName = FOpName Rel
+type RFlOpName = FlOpName Rel
+
+type AFName = FName Abs
+type AFlName = FlName Abs
+type AFOpName = FOpName Abs
+type AFlOpName = FlOpName Abs
+
+type UName = Name Unknown

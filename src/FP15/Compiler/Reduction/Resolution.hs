@@ -12,8 +12,8 @@ import FP15.Compiler.Types
 
 type RResult e a = ReaderT e (Either ResolutionError) a
 
-data ResolutionError = FNotFound (LocName F)
-                     | FlNotFound (LocName Fl)
+data ResolutionError = FNotFound (RLocName F)
+                     | FlNotFound (RLocName Fl)
                      deriving (Eq, Ord, Show, Read)
 
 instance Disp ResolutionError where
@@ -22,19 +22,19 @@ instance Disp ResolutionError where
 
 -- | The 'resolveExpr' function resolves all names inside an 'Expr' to
 -- fully-qualified names.
-resolveExpr :: Lookup e => e -> Expr -> Either ResolutionError Expr
+resolveExpr :: Lookup e => e -> BExpr -> Either ResolutionError Expr
 resolveExpr env expr = runReaderT (resolve expr) env
 
-resolve :: Lookup e => Expr -> RResult e Expr
+resolve :: Lookup e => BExpr -> RResult e Expr
 resolve (Const x) = return $ Const x
 resolve (App f xs) = App <$> loFl f <*> mapM resolve xs
 resolve (Func f) = Func <$> loF f
 
-loFl :: Lookup e => LocName Fl -> RResult e (LocName Fl)
-loF :: Lookup e => LocName F -> RResult e (LocName F)
-lo :: Lookup e => (LocName f -> ResolutionError)
-                  -> (e -> Name f -> Maybe (Name f))
-                  -> LocName f -> RResult e (LocName f)
+loFl :: Lookup e => RLocName Fl -> RResult e (ALocName Fl)
+loF :: Lookup e => RLocName F -> RResult e (ALocName F)
+lo :: Lookup e => (RLocName f -> ResolutionError)
+                  -> (e -> RName f -> Maybe (AName f)) -- TODO what's this sig?
+                  -> RLocName f -> RResult e (ALocName f)
 
 lo re lf lx@(Loc l x) = do
   e <- ask

@@ -7,10 +7,10 @@ data TokenData
 
 -- Identifiers
 
-  | Function FName
-  | Functional FlName
+  | Function RFName
+  | Functional RFlName
   | Operator UnknownName
-  | DotOperator FName
+  | DotOperator RFName
 
 -- Literals
 

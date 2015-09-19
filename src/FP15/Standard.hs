@@ -5,7 +5,7 @@ import FP15.Types
 import FP15.Compiler.Types
 import FP15.Evaluator.Standard(standardEnv')
 
-stdName :: String -> Name a
+stdName :: String -> Name (a, r)
 stdName = N ["Std"]
 
 stdFs :: [Id F]
