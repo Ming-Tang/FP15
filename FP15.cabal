@@ -52,7 +52,7 @@ executable FP15
   -- .hs or .lhs file containing the Main module.
   main-is:             Main.hs
 
-  extensions:          BangPatterns ViewPatterns NamedFieldPuns
+  default-extensions:  BangPatterns ViewPatterns NamedFieldPuns
 
   -- Modules included in this executable, other than Main.
   -- other-modules:
