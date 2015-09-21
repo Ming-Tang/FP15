@@ -78,10 +78,10 @@ type BExpr = XExpr Void (LocName F Rel) (LocName Fl Rel)
 
 -- | An FP15 expression as seen by the parser.
 data ExprAST = TValue Value
-             | TFunc (LocName F Rel)
-             | TOperator (LocName Unknown Rel)
-             | TDotOperator (LocName F Rel)
-             | TApp (LocName Fl Rel) [ExprAST]
+             | TFunc (RLocName F)
+             | TOperator (RLocName Unknown)
+             | TDotOperator (RLocName F)
+             | TApp (RLocName Fl) [ExprAST]
              | TIndex Int
              | TId
 

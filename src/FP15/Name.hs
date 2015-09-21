@@ -17,7 +17,7 @@ newtype Id a = Id String
              deriving (Eq, Ord, Show, Read, Generic)
 
 -- | An FP15 module name.
-newtype ModuleName = M [String]
+newtype ModuleName = M [String] -- TODO maybe use NonEmpty?
                    deriving (Eq, Ord, Show, Read, Generic)
 
 getId :: Id a -> String
@@ -44,6 +44,20 @@ instance Disp ModuleName where
 instance Disp (Name a) where
   disp (N [] x) = x
   disp (N ns x) = intercalate "." ns ++ "." ++ x
+
+-- * Relative Names
+
+-- | The 'RelName' type represents a name relative to an environment @e@.
+data RelName f e
+  -- | A name relative to an environment.
+  = RN e (RName f)
+  -- | A name that requies the syntax provider of the enviornment to resolve.
+  | SN e String
+  -- ^ An absolute name.
+  | AN e (AName f)
+  deriving (Eq, Ord, Show, Generic, Functor)
+
+instance (NFData e, NFData f) => NFData (RelName e f) where
 
 -- * Source Position
 

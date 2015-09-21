@@ -1,9 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ExistentialQuantification #-}
 module FP15.Compiler.Lookup where
 import Control.Monad
 import qualified Data.Map.Strict as M
 import FP15.Types
+
+-- | The 'synProvider' is the relative module name of the syntax provider.
+synProvider :: [String]
+synProvider = ["$"]
 
 -- These typeclasses are for symbol lookups. There are three namespaces for
 -- symbols: function, functional and operator. Notice that operators for
@@ -29,7 +34,7 @@ instance LookupFl (M.Map RFlName AFlName) where
 instance LookupOp (M.Map UName (Either FFixity FlFixity)) where
   lookupOp = flip M.lookup
 
--- ** Lookup Helpers
+-- * Lookup Helpers
 
 -- | The 'EmptyLookup' is a dummy implementation for the lookup typeclasses. It
 -- returns 'Nothing' for all inputs.
@@ -70,3 +75,16 @@ instance (LookupOp a, LookupOp b) => LookupOp (FallbackLookup a b) where
 
 instance (Lookup a, Lookup b) => Lookup (FallbackLookup a b) where
 
+-- ** Existential Types
+
+-- | The 'AnyLookup' type encapsulates an instance of 'Lookup'.
+data AnyLookup = forall e. Lookup e => AnyLookup e
+
+-- | The 'AnyLookupF' type encapsulates an instance of 'LookupF'.
+data AnyLookupF = forall e. LookupF e => AnyLookupF e
+
+-- | The 'AnyLookupFl' type encapsulates an instance of 'LookupFl'.
+data AnyLookupFl = forall e. LookupFl e => AnyLookupFl e
+
+-- | The 'AnyLookupOp' type encapsulates an instance of 'LookupOp'.
+data AnyLookupOp = forall e. LookupOp e => AnyLookupOp e
