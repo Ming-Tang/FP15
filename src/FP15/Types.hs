@@ -1,9 +1,11 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 module FP15.Types (
-  module FP15.Disp
+  module FP15.Xtn
+, module FP15.Disp
 , module FP15.Name
 , module FP15.Value
 , module FP15.Types
@@ -13,12 +15,13 @@ module FP15.Types (
 import GHC.Generics(Generic)
 import Control.DeepSeq
 import Text.PrettyPrint
-import FP15.Disp
-import FP15.Name
-import FP15.Value
 import Data.Map.Strict(Map)
 import qualified Data.List.NonEmpty as NE
 import Data.Void(Void)
+import FP15.Xtn
+import FP15.Disp
+import FP15.Name
+import FP15.Value
 
 -- * Type Synonyms
 -- Short identifiers are needed because of 80-char line length limit.
@@ -34,47 +37,39 @@ type FlFixity = Fixity Fl
 
 -- * Expressions
 
-data XExpr x f fl = Const Value
-                  | App fl [XExpr x f fl]
+-- TODO move parameters around
+data XExpr f fl x = Const Value
+                  | App fl [XExpr f fl x]
                   | Func f
                   | Ex !x
 
-deriving instance (Eq x, Eq f, Eq fl) => Eq (XExpr x f fl)
-deriving instance (Ord x, Ord f, Ord fl) => Ord (XExpr x f fl)
-deriving instance (Show x, Show f, Show fl) => Show (XExpr x f fl)
-deriving instance (Read x, Read f, Read fl) => Read (XExpr x f fl)
-deriving instance (Generic x, Generic f, Generic fl) => Generic (XExpr x f fl)
-instance (NFData x, NFData f, NFData fl) => NFData (XExpr x f fl) where
+deriving instance (Eq x, Eq f, Eq fl) => Eq (XExpr f fl x)
+deriving instance (Ord x, Ord f, Ord fl) => Ord (XExpr f fl x)
+deriving instance (Show x, Show f, Show fl) => Show (XExpr f fl x)
+deriving instance (Read x, Read f, Read fl) => Read (XExpr f fl x)
+deriving instance (Generic x, Generic f, Generic fl) => Generic (XExpr f fl x)
+deriving instance Functor (XExpr f fl)
+instance (NFData x, NFData f, NFData fl) => NFData (XExpr f fl x) where
+
+instance Xtn (XExpr f fl) where
+  maybeX (Ex x) = Just x
+  maybeX _ = Nothing
+  fromX = Ex
 
 prettyApp :: Doc -> [Doc] -> Doc
 prettyApp f xs = lparen <> fsep (map (nest 2) (f:xs)) <> rparen
 
-instance (Disp f, Disp fl, Disp x) => Disp (XExpr x f fl) where
+instance (Disp f, Disp fl, Disp x) => Disp (XExpr f fl x) where
   pretty (Const v) = pretty v
   pretty (App f xs) = prettyApp (pretty f) $ map pretty xs
   pretty (Func f) = pretty f
   pretty (Ex x) = pretty x
 
--- | 'Functor' implementation of any 'XExpr' where 'fmap' applies on the 'Ex'
--- case.
-newtype OnX f fl x = OnX { unOnX :: XExpr x f fl } deriving (Generic)
-
-instance Functor (OnX f fl) where
-  fmap f (OnX (Ex x)) = OnX $ Ex $ f x
-  fmap f (OnX (App fl xs)) = OnX $ App fl $ map (unOnX . fmap f . OnX) xs
-  fmap _ (OnX (Const v)) = OnX $ Const v
-  fmap _ (OnX (Func f)) = OnX $ Func f
-
--- | The 'mapEx' function converts the 'Ex' part of an 'XExpr'.
-mapEx :: (x -> y) -> XExpr x f fl -> XExpr y f fl
-mapEx f = unOnX . fmap f . OnX
-{-# INLINE mapEx #-}
-
 -- | An FP15 expression with the specified name type.
-type Expr = XExpr Void (LocName F Abs) (LocName Fl Abs)
+type Expr = XExpr (LocName F Abs) (LocName Fl Abs) Void
 
 -- | An FP15 expressions with local bindings.
-type BExpr = XExpr Void (LocName F Rel) (LocName Fl Rel)
+type BExpr = XExpr (LocName F Rel) (LocName Fl Rel) Void
 
 -- | An FP15 expression as seen by the parser.
 data ExprAST = TValue Value

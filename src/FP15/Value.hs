@@ -5,6 +5,7 @@
 module FP15.Value where
 import GHC.Generics
 import Control.DeepSeq
+import FP15.Xtn
 import FP15.Disp
 import Text.PrettyPrint
 import Data.Void(Void)
@@ -21,6 +22,11 @@ data XValue x
   | List [XValue x]
   | Extended !x  -- ^ Strict to make this case impossible for `XValue Void`.
   deriving (Eq, Ord, Show, Read, Generic, Functor)
+
+instance Xtn XValue where
+  maybeX (Extended x) = Just x
+  maybeX _ = Nothing
+  fromX = Extended
 
 -- TODO Map type
 
