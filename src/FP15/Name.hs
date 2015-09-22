@@ -30,6 +30,8 @@ getModuleName (M n) = n
 data Name a = N ![String] !String
             deriving (Eq, Ord, Show, Read, Generic)
 
+-- TODO separate AName and RName types.
+
 convName :: Name a -> Name b
 convName (N a b) = N a b
 
@@ -170,6 +172,7 @@ type FlId = Id Fl
 type FOpId = Id FOp
 type FlOpId = Id FlOp
 
+-- TODO I just found out I can't partially apply type synonyms.
 type RName a = Name (a, Rel)
 type AName a = Name (a, Abs)
 

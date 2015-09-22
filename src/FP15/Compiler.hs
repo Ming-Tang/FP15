@@ -67,10 +67,15 @@ getSourceMapping ModuleAST { astFs, astFls, astFFixes, astFlFixes }
 resolveImports :: CompiledModuleSet -> ImportList
               -> Either (Located ImportError) ImportedNames
 resolveImports cms = foldM addImportL $ Imported MB.empty where
+  -- Given imported names, add more from an an import statement.
   addImportL :: ImportedNames -> Located Import
                 -> Either (Located ImportError) ImportedNames
   addImportL ins li@(Loc l i) = makeErrLocated l $ addImport ins li i
 
+  -- addImport should do instead:
+  --   1. retrieve module (impModule)
+  --   2. retrieve names (impSels or everything)
+  --   3. generate resolution tables (impQual and impRename)
   addImport :: ImportedNames -> Located Import -> Import
                -> Either ImportError ImportedNames
   addImport ins li (Import { impModule = m
@@ -88,9 +93,9 @@ resolveImports cms = foldM addImportL $ Imported MB.empty where
   with :: ([String] -> String -> ([String], String))
           -> Located Import -> ModuleName -> ImportedNames
           -> Either ImportError ImportedNames
-  with q li m ins = do
+  with nameMapping li m ins = do
     mi <- lookupM m
-    let iins = IN.miToImportedNames q li m mi
+    let iins = IN.miToImportedNames nameMapping li m mi
     return $ iins `IN.mergeImportedNames` ins
 
   lookupM :: ModuleName -> Either ImportError ModuleInterface

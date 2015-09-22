@@ -18,12 +18,12 @@ miToImportedNames
      -> ModuleName -- ^ The name of the module the MI corresponds to.
      -> ModuleInterface -- ^ The module interface of the imported module.
      -> ImportedNames
-miToImportedNames idToName li (M m) (ModuleInterface mi)
+miToImportedNames nameMapping li (M m) (ModuleInterface mi)
   = Imported $ MB.map (mapKV mkName withLIM,
                        mapKV mkName withLIM,
                        mapKV mkName $ const withLI,
                        mapKV mkName $ const withLI) mi
-    where mkName (Id i) = uncurry N $ idToName m i
+    where mkName (Id i) = uncurry N $ nameMapping m i
           withLI x = si (li, x)
           withLIM (Id i) () = si (li, N m i)
           mapKV mk mv = M.mapKeys mk . M.mapWithKey mv

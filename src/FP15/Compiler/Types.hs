@@ -62,7 +62,8 @@ type BExpr = XExpr (LocUnName F) (LocUnName Fl) ()
 -- | A symbol with import source attached.
 type WithImpSrc a = (Located Import, a)
 
--- | Names that come from imports.
+-- | Names that come from imports, which is four mappings from local name to
+-- absolute name with import source.
 newtype ImportedNames
   = Imported (ModuleBody Name (NE (WithImpSrc AFName))
                               (NE (WithImpSrc AFlName))
