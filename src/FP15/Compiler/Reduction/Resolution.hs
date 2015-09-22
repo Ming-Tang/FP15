@@ -29,18 +29,28 @@ resolve :: Lookup e => BExpr -> RResult e Expr
 resolve (Const x) = return $ Const x
 resolve (App f xs) = App <$> loFl f <*> mapM resolve xs
 resolve (Func f) = Func <$> loF f
+resolve (Ex _) = error "resolve: Ex"
 
-loFl :: Lookup e => RLocName Fl -> RResult e (ALocName Fl)
-loF :: Lookup e => RLocName F -> RResult e (ALocName F)
+-- TODO this need to be rewritten when we have EnvName phase in the future
+
+loFl :: Lookup e => LocUnName Fl -> RResult e (ALocName Fl)
+loF :: Lookup e => LocUnName F -> RResult e (ALocName F)
 lo :: Lookup e => (RLocName f -> ResolutionError)
-                  -> (e -> RName f -> Maybe (AName f)) -- TODO what's this sig?
-                  -> RLocName f -> RResult e (ALocName f)
+                  -> (e -> RName f -> Maybe (AName f)) -- ^ lookup function
+                  -> LocUnName f -> RResult e (ALocName f)
 
-lo re lf lx@(Loc l x) = do
+lo _ _ (Loc l (AN n)) = return $ Loc l n
+lo re lf (Loc l (SN n)) = lo re lf (Loc l (RN $ N synProvider n))
+lo re lf lx@(Loc l (RN x)) = do
   e <- ask
   case lf e x of
     Just y -> return $ Loc l y
-    Nothing -> throwError $ re lx
+    Nothing -> throwError $ re $ Loc l x
 
 loFl = lo FlNotFound lookupFl
 loF = lo FNotFound lookupF
+
+-- | The 'synProvider' is the relative module name of the syntax provider.
+synProvider :: [String]
+synProvider = ["Std"]
+-- TODO get module redirection working and use $ instead.

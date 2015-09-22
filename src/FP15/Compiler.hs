@@ -48,7 +48,9 @@ stageModule cms mast@ModuleAST { astMN, astFs, astFls
   return $ ReducingModuleState ss Normal rmod
 
 addImplicitPrelude :: ImportList -> ImportList
-addImplicitPrelude = (Loc Nothing (Import $ M ["Std"]):)
+--addImplicitPrelude = ([Loc Nothing (Import $ M ["Std"]),
+--                       Loc Nothing (ImportRename (M ["Std"]) $ "$")] ++)
+addImplicitPrelude = ([Loc Nothing (Import $ M ["Std"])] ++)
 
 getSourceMapping :: ModuleAST -> SourceMapping
 getSourceMapping ModuleAST { astFs, astFls, astFFixes, astFlFixes }
@@ -126,8 +128,7 @@ stepModule r@(ReducingModuleState ss rt (Reducing rm@Module { fs })) =
     rt' = if ff then Finished else rt
 
     mm :: ExprState -> Either String ExprState
-    mm (Unresolved x) = ce $ Unlifted <$> convExprAST ss x
-    mm (Unlifted x) = ce $ Unreduced <$> liftBExpr x
+    mm (Unresolved x) = ce $ Unreduced <$> convExprAST ss x
     mm (Unreduced x) = ce $ Reduced <$> resolveExpr ss x
     mm x = return x
 
@@ -170,7 +171,7 @@ translateCMS (flattenCMS -> fd)
   h (a, Right x) = Right (a, x)
   es = M.filter (/= BaseF) es0
 
-flattenCMS :: CompiledModuleSet -> Map FName Expr
+flattenCMS :: CompiledModuleSet -> Map AFName Expr
 flattenCMS (CompiledModuleSet m) = M.fromList $ concatMap f $ M.toList m where
   f (M mn, CompiledModuleItem { cmiCM = Compiled Module { fs } })
     = map (\(Id x, e) -> (N mn x, e)) $ M.toList fs

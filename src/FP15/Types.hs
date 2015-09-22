@@ -37,7 +37,6 @@ type FlFixity = Fixity Fl
 
 -- * Expressions
 
--- TODO move parameters around
 data XExpr f fl x = Const Value
                   | App fl [XExpr f fl x]
                   | Func f
@@ -67,9 +66,6 @@ instance (Disp f, Disp fl, Disp x) => Disp (XExpr f fl x) where
 
 -- | An FP15 expression with the specified name type.
 type Expr = XExpr (LocName F Abs) (LocName Fl Abs) Void
-
--- | An FP15 expressions with local bindings.
-type BExpr = XExpr (LocName F Rel) (LocName Fl Rel) Void
 
 -- | An FP15 expression as seen by the parser.
 data ExprAST = TValue Value
@@ -172,6 +168,8 @@ data SelectiveImport = NoRename ImpId
                      deriving (Eq, Ord, Show, Read)
 
 data Import = Import { importModule :: ModuleName }
+            | ImportRename { importModule :: ModuleName
+                           , rename :: String }
             | ImportQualified { importModule :: ModuleName }
             | ImportQualifiedRename { importModule :: ModuleName
                                     , qualifiedRename :: String }

@@ -45,20 +45,6 @@ instance Disp (Name a) where
   disp (N [] x) = x
   disp (N ns x) = intercalate "." ns ++ "." ++ x
 
--- * Relative Names
-
--- | The 'RelName' type represents a name relative to an environment @e@.
-data RelName f e
-  -- | A name relative to an environment.
-  = RN e (RName f)
-  -- | A name that requies the syntax provider of the enviornment to resolve.
-  | SN e String
-  -- ^ An absolute name.
-  | AN e (AName f)
-  deriving (Eq, Ord, Show, Generic, Functor)
-
-instance (NFData e, NFData f) => NFData (RelName e f) where
-
 -- * Source Position
 
 -- | The type of source positions, which locates the part of a source file by
@@ -116,7 +102,7 @@ instance Disp a => Disp (DispLoc a) where
 
 type LocId a = Located (Id a)
 type LocName a r = Located (Name (a, r))
-type ULocName = Located (Name Unknown)
+type ULocName r = Located (Name (Unknown, r))
 
 type RLocName a = LocName a Rel
 type ALocName a = LocName a Abs
@@ -202,4 +188,4 @@ type AFlName = FlName Abs
 type AFOpName = FOpName Abs
 type AFlOpName = FlOpName Abs
 
-type UName = Name Unknown
+type RUName = Name (Unknown, Rel)

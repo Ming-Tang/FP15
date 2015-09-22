@@ -1,4 +1,6 @@
 {-# LANGUAGE Safe #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 -- | Common types for the FP15 compiler.
@@ -7,6 +9,8 @@ module FP15.Compiler.Types (
 , module FP15.Compiler.Lookup
 , module FP15.Compiler.Modules
 ) where
+import GHC.Generics
+import Control.DeepSeq
 import Control.Monad
 import Control.Applicative
 import FP15.Types
@@ -19,6 +23,39 @@ import FP15.Compiler.Modules
 
 -- | The function signature of 'FP15.Parsing.Parser.parse'.
 type Parser = ModuleSource -> Either String ModuleAST
+
+-- * Names
+
+-- | The 'UnName' type represents an unresolved name.
+data UnName f
+  -- | A name relative to an environment.
+  = RN (RName f)
+  -- | A name that requies the syntax provider of the enviornment to resolve.
+  | SN String
+  -- ^ An name meant to be absolute regardless of context.
+  | AN (AName f)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData f => NFData (UnName f) where
+
+-- | The 'EnvName' type represents a name relative to an environment @e@.
+data EnvName f e
+  -- | A name relative to an environment.
+  = REN e (RName f)
+  -- ^ An absolute name.
+  | AEN e (AName f)
+  deriving (Eq, Ord, Show, Read, Generic, Functor)
+
+-- TODO the env doesn't need to lookup infix operators
+
+instance (NFData e, NFData f) => NFData (EnvName e f) where
+
+type LocUnName f = Located (UnName f)
+
+-- * Expression Types
+
+-- | A desugared FP15 expression.
+type BExpr = XExpr (LocUnName F) (LocUnName Fl) ()
 
 -- * Reduction
 
@@ -101,8 +138,7 @@ data ReducingModuleState
 --
 -- TODO error states.
 data ExprState = Unresolved ExprAST
-               | Unlifted BExpr
-               | Unreduced Expr
+               | Unreduced BExpr
                | Reduced Expr
                deriving (Eq, Ord, Show, Read)
 

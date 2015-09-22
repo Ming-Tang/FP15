@@ -13,7 +13,6 @@ import Control.Applicative hiding (Const)
 import FP15.Value
 import FP15.Types
 import FP15.Compiler.Types
-import FP15.Standard(stdName)
 import FP15.Compiler.Precedence
 import FP15.Compiler.SmartSplit
 import FP15.Compiler.CommaNotation
@@ -36,7 +35,7 @@ data BError
   = ErrorMsg !String !(Maybe ExprAST)
 
   -- | The specified operator cannot be resolved.
-  | OpNotFound !(ULocName)
+  | OpNotFound !(ULocName Rel)
 
   -- | A precedence parsing error has occurred while parsing
   -- a '()'-expression.
@@ -67,7 +66,7 @@ data BError
   | CommaError (CError ExprAST ExprAST)
   deriving (Eq, Ord, Show, Read)
 
-withMaybeE :: Doc -> (Maybe ExprAST) -> Doc
+withMaybeE :: Doc -> Maybe ExprAST -> Doc
 withMaybeE x Nothing = x
 withMaybeE x (Just e) = x $+$ text (show e)
 
@@ -86,14 +85,14 @@ instance Disp BError where
 
 -- | An 'ResolvedOp' represents an operator (with location of mention) that has
 -- been successfully resolved to an identifier.
-data ResolvedOp f = ResolvedOp { getOp :: !(ULocName)
-                               , getResolvedId :: !(AName f) }
+data ResolvedOp f = ResolvedOp { getOp :: !(ULocName Rel)
+                               , getResolvedId :: !(UnName f) }
                   deriving (Eq, Ord, Show, Read)
 
-instance Same (ResolvedOp f) (UName, AName f) where
+instance Same (ResolvedOp f) (RUName, UnName f) where
   key (ResolvedOp (getLocated -> x) n) = (x, n)
 
-getLocResolvedId :: ResolvedOp f -> Located (AName f)
+getLocResolvedId :: ResolvedOp f -> LocUnName f
 getLocResolvedId (ResolvedOp (Loc l _) i) = Loc l i
 
 -- * Functions
@@ -109,18 +108,21 @@ getLocResolvedId (ResolvedOp (Loc l _) i) = Loc l i
 convExprAST :: LookupOp e => e -> ExprAST -> Either BError BExpr
 convExprAST env ast = runReaderT (toBE =<< doSmartSplit ast) env
 
+lrn :: Located (RName f) -> Located (UnName f)
+lrn (Loc l f) = Loc l $ RN f
+
 toBE :: LookupOp e => ExprAST -> BResult e BExpr
 toBE TId = return pId
 toBE (TValue v) = return $ Const v
-toBE (TFunc f) = return $ Func f
-toBE (TOperator o) = do
-  (Loc _ (Fixity _ _ f)) <- lookupFOpOnly o
-  return $ Func $ withSameLoc o f
-toBE (TDotOperator f) = return $ Func f
-toBE (TApp fl es) = App fl <$> mapM toBE es
+toBE (TFunc f) = return $ Func $ lrn f
+toBE (TOperator lo@(Loc l o)) = do
+  (Loc _ (Fixity _ _ f)) <- lookupFOpOnly lo
+  return $ Func $ Loc l $ AN f
+toBE (TDotOperator f) = return $ Func $ lrn f
+toBE (TApp fl es) = App (lrn fl) <$> mapM toBE es
 toBE (TIndex i) =
   return (baseA "Fork" [ pId, Const $ Int $ fromIntegral i]
-          |> (Func $ stdNameL "index"))
+          |> (Func $ synNameL "index"))
 
 toBE (TIf p a b) = base "If" <*> mapM toBE [p, a, b]
 toBE (TFork es) = base "Fork" <*> mapM toBE es
@@ -157,7 +159,7 @@ toBE (TUnresolvedPrimaryList ps) =
   >>= fromTreeFl where
   -- TODO move this as a constant
   composeOp :: (Assoc, Prec, ResolvedOp Fl)
-  composeOp = (VarA, (0, 0), ResolvedOp boCompose $ getLocated bnCompose)
+  composeOp = (VarA, (0, 0), ResolvedOp (noLoc (N [] "")) $ SN "Compose")
 
 toBE (TUnresolvedInfixNotation ps) =
   toPrecNodesF ps
@@ -222,9 +224,9 @@ ucnToExprAST (UOp _ o) = [o]
 
 -- ** Precedence Parsing
 
-precNodeFromFixity :: ULocName -> Located (Fixity f)
+precNodeFromFixity :: ULocName Rel -> Located (Fixity f)
                     -> PrecNode (ResolvedOp f) a
-precNodeFromFixity o o'@(Loc _ (Fixity typ p oa)) =
+precNodeFromFixity o o'@(Loc _ (Fixity typ p (AN -> oa))) =
   case typ of
     Prefix -> PreN p $ ResolvedOp o oa
     LeftAssoc -> InfN LeftA p $ ResolvedOp o oa
@@ -240,7 +242,7 @@ toPrecNodeFl :: LookupOp e => ExprAST -> BResult e (PrecNode (ResolvedOp Fl) Exp
 toPrecNodeFl (TOperator o@(Loc l _)) = do
   o' <- lookupOpOnly o
   case o' of
-    Left (Fixity _ _ fa) -> return $ TermN $ TFunc $ withSameLoc o fa
+    Left (Fixity _ _ fa) -> return $ TermN $ TFunc $ Loc l $ convName fa
     Right f -> return $ precNodeFromFixity o $ Loc l f
 
 toPrecNodeFl (TDotOperator f) = return $ TermN $ TFunc f
@@ -276,8 +278,9 @@ splitPrecNodes = map process . split (dropInitBlank $ dropFinalBlank $ dropInner
              | otherwise = TUnresolvedPrimaryList xs
 
 toPrecNodeF :: LookupOp e => ExprAST -> BResult e (PrecNode (ResolvedOp F) ExprAST)
-toPrecNodeF (TDotOperator o)
-  = return $ InfN LeftA (-5, 0) $ ResolvedOp (fmap convName o) (getLocated o)
+toPrecNodeF (TDotOperator o@(Loc _ o')) = do
+  e <- ask
+  return $ InfN LeftA (-5, 0) $ ResolvedOp (fmap convName o) $ RN o'
 toPrecNodeF (TOperator o) = precNodeFromFixity o <$> lookupFOpOnly o
 toPrecNodeF x = return $ TermN x
 
@@ -296,15 +299,16 @@ fromTreeF (Term Nothing) = return pId
 
 -- * Lookups
 
-lookupFOpOnly :: LookupOp e => ULocName -> BResult e (LocFixity F)
+lookupFOpOnly :: LookupOp e => ULocName Rel -> BResult e (LocFixity F)
 lookupFOpOnly o = do
   e <- ask
   case lookupOp e $ getLocated o of
     Nothing -> throwError $ OpNotFound o
-    Just (Right (Fixity _ _ a)) -> throwError $ FlOpNotAllowed $ ResolvedOp o a
+    Just (Right (Fixity _ _ a)) ->
+      throwError $ FlOpNotAllowed $ ResolvedOp o $ AN a
     Just (Left f) -> return $ withSameLoc o f
 
-lookupOpOnly :: LookupOp e => ULocName
+lookupOpOnly :: LookupOp e => ULocName Rel
                 -> BResult e (Either FFixity FlFixity)
 lookupOpOnly o = do
   e <- ask
@@ -315,23 +319,20 @@ lookupOpOnly o = do
 -- * Primitive Symbols
 
 base :: Monad m => String -> m ([BExpr] -> BExpr)
-base = return . App . stdNameL
+base = return . App . synNameL
 
 baseA :: String -> [BExpr] -> BExpr
-baseA = App . stdNameL
+baseA = App . synNameL
 
-stdNameL :: String -> RLocName f
-stdNameL = Loc Nothing . stdName
+synNameL :: String -> LocUnName f
+synNameL = Loc Nothing . SN
 
 pId :: BExpr
-pId = Func $ stdNameL "_"
+pId = Func $ synNameL "_"
 
-boCompose :: ULocName
-boCompose = stdNameL ""
-
-bnCompose, bnFork :: RLocName Fl
-bnCompose = stdNameL "Compose"
-bnFork = stdNameL "Fork"
+bnCompose, bnFork :: LocUnName Fl
+bnCompose = synNameL "Compose"
+bnFork = synNameL "Fork"
 
 bFork :: [BExpr] -> BExpr
 bFork = App bnFork

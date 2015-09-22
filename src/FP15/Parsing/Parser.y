@@ -134,9 +134,9 @@ braces :: [ExprAST] -> ExprAST
 braces [x] = x
 braces xs = THook xs
 
-viewFunction :: Token -> Maybe (LocName F)
-viewFunctional :: Token -> Maybe (LocName Fl)
-viewOperator :: Token -> Maybe (LocName Unknown)
+viewFunction :: Token -> Maybe (RLocName F)
+viewFunctional :: Token -> Maybe (RLocName Fl)
+viewOperator :: Token -> Maybe (RLocName Unknown)
 
 viewFunction (Token (Function n) p _) = Just (Loc (Just p) n)
 viewFunction _ = Nothing
@@ -150,7 +150,7 @@ viewOperator _ = Nothing
 viewDotOperator (Token (DotOperator n) p _) = Just (Loc (Just p) n)
 viewDotOperator _ = Nothing
 
-viewOperatorS :: String -> Token -> Maybe (LocName Unknown)
+viewOperatorS :: String -> Token -> Maybe (RLocName Unknown)
 viewOperatorS n' (Token (Operator n0@(N [] n)) p _) | n == n' = Just (Loc (Just p) n0)
 viewOperatorS _ _ = Nothing
 
@@ -165,7 +165,7 @@ parseFInfix xs
 
 
 -- TODO error reporting for things like Module.abc = def
-locNameToId :: LocName F -> LocId F
+locNameToId :: RLocName F -> LocId F
 locNameToId (Loc l (N _ n)) = Loc l (Id n)
 
 }

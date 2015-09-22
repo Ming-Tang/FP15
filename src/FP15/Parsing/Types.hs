@@ -9,7 +9,7 @@ data TokenData
 
   | Function RFName
   | Functional RFlName
-  | Operator UnknownName
+  | Operator RUName
   | DotOperator RFName
 
 -- Literals
