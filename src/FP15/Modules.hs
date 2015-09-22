@@ -33,9 +33,13 @@ type Prec = (Int, Int)
 data OperatorType = Prefix | LeftAssoc | RightAssoc | VarAssoc
                   deriving (Eq, Ord, Show, Read, Generic)
 
+instance NFData OperatorType where
+
 -- | Fixity declaration.
 data Fixity a = Fixity OperatorType Prec (Name (a, Abs))
               deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData (Fixity a) where
 
 type LocFixity a = Located (Fixity a)
 
@@ -43,34 +47,45 @@ type LocFixity a = Located (Fixity a)
 
 type FunctionalDefinition = ()
 
--- | TODO finish these
-data ImpId = A deriving (Eq, Ord, Show, Read, Generic)
-data ImpRename = B deriving (Eq, Ord, Show, Read, Generic)
+data RNable a = NoRename (Id a) | Rename (Id a) (Id a)
+              deriving (Eq, Ord, Show, Read, Generic)
 
--- TODO function/functional/operator
-data SelectiveImport = NoRename ImpId
-                     | Rename ImpRename
+instance NFData (RNable a) where
+
+data SelImp = ImpF (RNable F) | ImpFl (RNable Fl) | ImpOp (Id Unknown)
                      deriving (Eq, Ord, Show, Read, Generic)
 
-data Import = Import { importModule :: ModuleName }
-            | ImportRename { importModule :: ModuleName
-                           , rename :: String }
-            | ImportQualified { importModule :: ModuleName }
-            | ImportQualifiedRename { importModule :: ModuleName
-                                    , qualifiedRename :: String }
-            | ImportFrom { importModule :: ModuleName
-                         , selectiveImports :: [SelectiveImport] }
+instance NFData SelImp where
+
+newtype ModRename = ModRename ModuleName
+                  deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData ModRename where
+
+data ImpQual = Unqual | Qual
+               deriving (Eq, Ord, Show, Read, Generic)
+
+data Import = Import { impModule :: !ModuleName
+                     , impQual :: !ImpQual
+                     , impRename :: !(Maybe ModRename)
+                     , impSels :: !(Maybe [SelImp]) }
             deriving (Eq, Ord, Show, Read, Generic)
+
+mkImport, mkImportQual :: ModuleName -> Import
+mkImport m = Import m Unqual Nothing Nothing
+mkImportQual m = Import m Qual Nothing Nothing
+
+instance NFData Import where
 
 type ImportList = [Located Import]
 
-type ExportList = [Located ImpId]
+type ExportList = [Located SelImp]
 
 -- ** AST
 
-data ModuleAST = ModuleAST { astMN :: ModuleName
-                           , astImps :: ImportList
-                           , astExps :: ExportList
+data ModuleAST = ModuleAST { astMN :: !ModuleName
+                           , astImps :: !ImportList
+                           , astExps :: !ExportList
                            , astFs :: Map (LocId F) ExprAST
                            , astFls :: Map (LocId Fl) FunctionalAST
                            , astFFixes :: Map (LocId FOp) FFixity

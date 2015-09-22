@@ -113,10 +113,6 @@ instance LookupOp ImportedNames where
 instance Lookup ImportedNames where
 
 -- | A module that is being reduced.
---
--- The @dependencyGraph@ field contains a graph representing the "is depended
--- by" relationship between functions, as an adjacency map. The edge @a -> b@
--- denotes the function @b@ depends on @a@.
 newtype ReducingModule
   = Reducing (ModuleBody Id ExprState FunctionalDefinition FFixity FlFixity)
   deriving (Eq, Ord, Show, Read)

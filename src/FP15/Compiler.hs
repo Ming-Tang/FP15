@@ -50,7 +50,7 @@ stageModule cms mast@ModuleAST { astMN, astFs, astFls
 addImplicitPrelude :: ImportList -> ImportList
 --addImplicitPrelude = ([Loc Nothing (Import $ M ["Std"]),
 --                       Loc Nothing (ImportRename (M ["Std"]) $ "$")] ++)
-addImplicitPrelude = ([Loc Nothing (Import $ M ["Std"])] ++)
+addImplicitPrelude = ([Loc Nothing (mkImport $ M ["Std"])] ++)
 
 getSourceMapping :: ModuleAST -> SourceMapping
 getSourceMapping ModuleAST { astFs, astFls, astFFixes, astFlFixes }
@@ -73,8 +73,14 @@ resolveImports cms = foldM addImportL $ Imported MB.empty where
 
   addImport :: ImportedNames -> Located Import -> Import
                -> Either ImportError ImportedNames
-  addImport ins li (Import m) = with qualified li m ins >>= with unqualified li m
-  addImport ins li (ImportQualified m) = with qualified li m ins
+  addImport ins li (Import { impModule = m
+                           , impQual = Unqual
+                           , impRename = Nothing
+                           , impSels = Nothing }) = with qualified li m ins >>= with unqualified li m
+  addImport ins li (Import { impModule = m
+                           , impQual = Qual
+                           , impRename = Nothing
+                           , impSels = Nothing }) = with qualified li m ins
   addImport ins li _ = error $ "FP15.Compiler.resolveImports: Not implemented: " ++ show li
 
   (unqualified, qualified) = (const ((,) []), (,))
