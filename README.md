@@ -82,4 +82,4 @@ Runtime
 
 Code
 ====
- - [ ] Refactor name resolution so absolute and relative names are distinguhshed
+ - [X] Refactor name resolution so absolute and relative names are distinguhshed
