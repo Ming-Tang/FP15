@@ -40,3 +40,4 @@ type FPResult = FP FPValue
 -- 'RuntimeError'.
 type FPFunc = FPValue -> FPResult
 
+{-# ANN module "HLint: ignore Use import/export shortcut" #-}
