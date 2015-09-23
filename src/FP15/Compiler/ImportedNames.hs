@@ -1,9 +1,25 @@
 module FP15.Compiler.ImportedNames where
 import FP15.Types
-import FP15.Compiler.Types
-import qualified FP15.Compiler.ModuleBody as MB
+import Data.Monoid
+import Control.Applicative
+import Control.Monad(mplus)
 import qualified Data.Map.Strict as M
+import FP15.Compiler.Modules
+import FP15.Compiler.ModuleBody as MB
+import FP15.Compiler.Lookup
 import Data.List.NonEmpty(NonEmpty((:|)))
+
+-- | A symbol with import source attached.
+type WithImpSrc a = (Located Import, a)
+
+-- | Names that come from imports, which is four mappings from local name to
+-- absolute name with import source.
+newtype ImportedNames
+  = Imported (ModuleBody Name (NE (WithImpSrc AFName))
+                              (NE (WithImpSrc AFlName))
+                              (NE (WithImpSrc FFixity))
+                              (NE (WithImpSrc FlFixity)))
+  deriving (Eq, Ord, Show, Read)
 
 empty :: ImportedNames
 empty = Imported MB.empty
@@ -37,3 +53,23 @@ mergeImportedNames (Imported a) (Imported b)
         mergeML = M.unionWith appendNE
         appendNE :: NE a -> NE a -> NE a
         appendNE (x:|xs) (y:|ys) = x :| xs ++ y:ys
+
+_gf :: NE (WithImpSrc a) -> a
+_gf ((_, f) :| _) = f
+
+instance LookupF ImportedNames where
+  lookupF (Imported Module { fs }) e = _gf <$> M.lookup (convName e) fs
+
+instance LookupFl ImportedNames where
+  lookupFl (Imported Module { fls }) e = _gf <$> M.lookup (convName e) fls
+
+instance LookupOp ImportedNames where
+  lookupOp (Imported Module { fFixes, flFixes }) e
+    = f Right flFixes `mplus` f Left fFixes where
+      f c b = (c . _gf) <$> M.lookup (convName e) b
+
+instance Lookup ImportedNames where
+
+instance Monoid ImportedNames where
+  mempty = FP15.Compiler.ImportedNames.empty
+  mappend = mergeImportedNames

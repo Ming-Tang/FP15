@@ -72,5 +72,3 @@ instance Lookup MIContext where
 newtype SourceMapping
   = SourceMapping (ModuleBody Id SrcPos SrcPos SrcPos SrcPos)
   deriving (Eq, Ord, Show, Read)
-
-

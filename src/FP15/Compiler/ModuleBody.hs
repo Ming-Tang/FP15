@@ -1,7 +1,7 @@
 -- | Contains types for dealing with 'ModuleBody's.
 module FP15.Compiler.ModuleBody where
 import FP15.Types
-import FP15.Compiler.Types
+import FP15.Compiler.Modules
 import qualified Data.Map.Strict as M
 
 -- | The empty 'ModuleBody'.

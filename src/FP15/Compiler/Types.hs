@@ -5,18 +5,16 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | Common types for the FP15 compiler.
 module FP15.Compiler.Types (
-  module FP15.Compiler.Types
+  ImportedNames(..)
+, module FP15.Compiler.Types
 , module FP15.Compiler.Lookup
 , module FP15.Compiler.Modules
 ) where
 import GHC.Generics
 import Control.DeepSeq
-import Control.Monad
-import Control.Applicative
 import FP15.Types
-import qualified Data.Map.Strict as M
-import Data.List.NonEmpty(NonEmpty(..))
 import FP15.Compiler.Lookup
+import FP15.Compiler.ImportedNames as IN
 import FP15.Compiler.Modules
 
 -- * Type Synonyms
@@ -59,18 +57,6 @@ type BExpr = XExpr (LocUnName F) (LocUnName Fl) ()
 
 -- * Reduction
 
--- | A symbol with import source attached.
-type WithImpSrc a = (Located Import, a)
-
--- | Names that come from imports, which is four mappings from local name to
--- absolute name with import source.
-newtype ImportedNames
-  = Imported (ModuleBody Name (NE (WithImpSrc AFName))
-                              (NE (WithImpSrc AFlName))
-                              (NE (WithImpSrc FFixity))
-                              (NE (WithImpSrc FlFixity)))
-  deriving (Eq, Ord, Show, Read)
-
 -- | Variables in the reduction process that do not change.
 data StaticState
   = SS { ssCMS :: CompiledModuleSet
@@ -96,22 +82,6 @@ instance LookupOp StaticState where
   lookupOp SS { ssMN, ssIN, ssMI } = lookupOp (Fallback ssIN (MIContext ssMN ssMI))
 
 instance Lookup StaticState where
-
-_gf :: NE (WithImpSrc a) -> a
-_gf ((_, f) :| _) = f
-
-instance LookupF ImportedNames where
-  lookupF (Imported Module { fs }) e = _gf <$> M.lookup (convName e) fs
-
-instance LookupFl ImportedNames where
-  lookupFl (Imported Module { fls }) e = _gf <$> M.lookup (convName e) fls
-
-instance LookupOp ImportedNames where
-  lookupOp (Imported Module { fFixes, flFixes }) e
-    = f Right flFixes `mplus` f Left fFixes where
-      f c b = (c . _gf) <$> M.lookup (convName e) b
-
-instance Lookup ImportedNames where
 
 -- | A module that is being reduced.
 newtype ReducingModule
