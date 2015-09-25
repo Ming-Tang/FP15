@@ -1,8 +1,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 module FP15.Modules where
+import Text.PrettyPrint
 import GHC.Generics(Generic)
 import Control.DeepSeq
 import Data.Map.Strict(Map)
+import FP15.Disp
 import FP15.Name
 import FP15.Expr
 
@@ -12,6 +14,8 @@ type FlFixity = Fixity Fl
 
 -- * Compilation
 
+-- TODO belongs elsewhere
+-- TODO moduleSource should be Maybe
 data ModuleSource = ModuleSource { moduleFile :: !(Maybe String)
                                  , moduleSource :: !String }
                   deriving (Eq, Ord, Show, Read, Generic)
@@ -47,33 +51,71 @@ type LocFixity a = Located (Fixity a)
 
 type FunctionalDefinition = ()
 
-data RNable a = NoRename (Id a) | Rename (Id a) (Id a)
-              deriving (Eq, Ord, Show, Read, Generic)
+-- | The 'MIRef' type represents a reference to an item from a module interface.
+-- This type is used to express lookups, imports, and exports.
+data MIRef f fl op = MIF f | MIFl fl | MIOp op
+                   deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData (RNable a) where
+instance (NFData f, NFData fl, NFData op) => NFData (MIRef f fl op) where
 
-data SelImp = ImpF (RNable F) | ImpFl (RNable Fl) | ImpOp (Id Unknown)
-                     deriving (Eq, Ord, Show, Read, Generic)
-
-instance NFData SelImp where
+-- | A selective import.
+type SelImp = MIRef (Id F) (Id Fl) (Id Unknown)
 
 newtype ModRename = ModRename ModuleName
                   deriving (Eq, Ord, Show, Read, Generic)
 
 instance NFData ModRename where
 
+instance Disp ModRename where
+  pretty (ModRename m) = pretty m <+> text "=" <> space
+
 data ImpQual = Unqual | Qual
                deriving (Eq, Ord, Show, Read, Generic)
 
+instance NFData ImpQual where
+
+instance Disp ImpQual where
+  pretty Unqual = text ""
+  pretty Qual = text "."
+
+-- An import filter.
+data ImpFilters = Selective ![SelImp] | Hiding ![SelImp]
+            deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData ImpFilters where
+
+instance Disp ImpFilters where
+  pretty (Selective _) = text "(...)"
+  pretty (Hiding _) = text "-(...)"
+
+-- An import statement.
 data Import = Import { impModule :: !ModuleName
                      , impQual :: !ImpQual
                      , impRename :: !(Maybe ModRename)
-                     , impSels :: !(Maybe [SelImp]) }
+                     , impFilters :: !(Maybe ImpFilters) }
             deriving (Eq, Ord, Show, Read, Generic)
 
 mkImport, mkImportQual :: ModuleName -> Import
 mkImport m = Import m Unqual Nothing Nothing
 mkImportQual m = Import m Qual Nothing Nothing
+
+instance Disp Import where
+  pretty (Import m q r f)
+    = text "+" <> mp r <> pretty m <> pretty q <> mp f where
+      mp :: Disp a => Maybe a -> Doc
+      mp = maybe empty pretty
+
+-- +Module            import Module
+-- +Module.           import qualified Module
+-- +M = Module        import Module as M
+-- +M = Module.       import qualified Module as M
+
+-- +Module(a)         import Module(a)
+-- +Module.(a)        import qualified Module(a)
+-- +M = Module(a)     import Module(a) as M
+-- +M = Module.(a)    import qualified Module(a) as M
+
+-- +Module-(a)        import Module hiding (a)
 
 instance NFData Import where
 

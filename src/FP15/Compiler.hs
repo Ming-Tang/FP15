@@ -81,11 +81,11 @@ resolveImports cms = foldM addImportL $ Imported MB.empty where
   addImport ins li (Import { impModule = m
                            , impQual = Unqual
                            , impRename = Nothing
-                           , impSels = Nothing }) = with qualified li m ins >>= with unqualified li m
+                           , impFilters = Nothing }) = with qualified li m ins >>= with unqualified li m
   addImport ins li (Import { impModule = m
                            , impQual = Qual
                            , impRename = Nothing
-                           , impSels = Nothing }) = with qualified li m ins
+                           , impFilters = Nothing }) = with qualified li m ins
   addImport ins li _ = error $ "FP15.Compiler.resolveImports: Not implemented: " ++ show li
 
   (unqualified, qualified) = (const ((,) []), (,))
