@@ -47,8 +47,7 @@ instance NFData (Fixity a) where
 
 type LocFixity a = Located (Fixity a)
 
--- * ASTs
-
+-- TODO why is this here?
 type FunctionalDefinition = ()
 
 -- | The 'MIRef' type represents a reference to an item from a module interface.

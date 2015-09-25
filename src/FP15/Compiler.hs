@@ -16,6 +16,7 @@ import FP15.Compiler.Types
 import FP15.Compiler.Reduction
 import FP15.Compiler.SmartSplit()
 import FP15.Evaluator.Types(BaseExpr)
+import qualified FP15.Compiler.ImportFiltering as IF()
 import qualified FP15.Evaluator.Types as E
 import qualified FP15.Compiler.ModuleBody as MB
 import qualified FP15.Compiler.ImportedNames as IN

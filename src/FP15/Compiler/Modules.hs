@@ -1,8 +1,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
--- | Common types for the FP15 compiler.
 module FP15.Compiler.Modules where
 import Control.Monad
 import Control.Applicative
