@@ -49,9 +49,12 @@ stageModule cms mast@ModuleAST { astMN, astFs, astFls
   return $ ReducingModuleState ss Normal rmod
 
 addImplicitPrelude :: ImportList -> ImportList
---addImplicitPrelude = ([Loc Nothing (Import $ M ["Std"]),
---                       Loc Nothing (ImportRename (M ["Std"]) $ "$")] ++)
-addImplicitPrelude = ([Loc Nothing (mkImport $ M ["Std"])] ++)
+addImplicitPrelude = ([Loc Nothing (mkImport $ M ["Std"]),
+                       Loc Nothing (Import { impModule = M ["Std"]
+                                           , impQual = Qual
+                                           , impRename = Just $ ModRename $ M ["$"]
+                                           , impFilters = Nothing })] ++)
+--addImplicitPrelude = ([Loc Nothing (mkImport $ M ["Std"])] ++)
 
 getSourceMapping :: ModuleAST -> SourceMapping
 getSourceMapping ModuleAST { astFs, astFls, astFFixes, astFlFixes }
@@ -81,17 +84,20 @@ resolveImports cms = foldM addImportL $ Imported MB.empty where
                -> Either ImportError ImportedNames
   addImport ins li (Import { impModule = m
                            , impQual = Unqual
-                           , impRename = Nothing
-                           , impFilters = Nothing }) = with qualified li m ins >>= with unqualified li m
+                           , impRename = rn
+                           , impFilters = Nothing }) = with (qualified rn) li m ins >>= with unqualified li m
   addImport ins li (Import { impModule = m
                            , impQual = Qual
-                           , impRename = Nothing
-                           , impFilters = Nothing }) = with qualified li m ins
+                           , impRename = rn
+                           , impFilters = Nothing }) = with (qualified rn) li m ins
   addImport ins li _ = error $ "FP15.Compiler.resolveImports: Not implemented: " ++ show li
 
-  (unqualified, qualified) = (const ((,) []), (,))
+  -- TODO rename logic here
+  unqualified m n = ([], n)
+  qualified Nothing m n = (m, n)
+  qualified (Just (ModRename (M m'))) m n = (m', n)
 
-  with :: ([String] -> String -> ([String], String))
+  with :: ([String] -> String -> ([String], String)) -- mapping
           -> Located Import -> ModuleName -> ImportedNames
           -> Either ImportError ImportedNames
   with nameMapping li m ins = do

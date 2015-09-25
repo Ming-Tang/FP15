@@ -1,6 +1,7 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Main where
+import Control.DeepSeq(force)
 import Control.Monad.Error
 import Data.Map((!))
 import Text.PrettyPrint
@@ -50,17 +51,17 @@ main = do
   src <- getContents
   let ast = unwrap $ parse $ ModuleSource Nothing src
   let m = unwrap $ stageModule standardCMS ast
-  let m' = until ((==) Finished . rmsTag) (unwrap . stepModule) m
-  let c = makeCompiledModule m'
-  let cms' = addModule (ssMN $ rmsSS m') c standardCMS
-  let (CompiledModuleSet cmis) = cms'
+  let m' = force $ until ((==) Finished . rmsTag) (unwrap . stepModule) m
+  let c = force $ makeCompiledModule m'
+  let cms' = force $ addModule (ssMN $ rmsSS m') c standardCMS
+  let (CompiledModuleSet cmis) = force $ cms'
   -- print $ vcat $ prettyCMILines (M ["Main"]) (cmis ! (M ["Main"]))
   let fl = unwrap $ translateCMS cms'
-  let s = transMap standardEnv fl
+  let s = force $ transMap standardEnv fl
   res <- fmap unwrap $ runErrorT $ runFP $ (s ! "Main.main") (List [])
   putStrLn $ disp (res :: FPValue)
   where unwrap (Left x) = error $ disp x
-        unwrap (Right x) = x
+        unwrap (Right x) = force x
 {-
       case m of
         Left e -> print e

@@ -134,3 +134,5 @@ data ModuleAST = ModuleAST { astMN :: !ModuleName
                            }
                deriving (Eq, Ord, Show, Read, Generic)
 
+instance NFData ModuleAST where
+

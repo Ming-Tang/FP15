@@ -32,7 +32,7 @@ $neg = \~
 
 @underscores = "_"+
 @module_name = @underscores? $upper $ident_char*
-@module_part = @module_name ("." @module_name)* "."
+@module_part = (@module_name ("." @module_name)* ".") | "$."
 
 @function_part = @underscores | @underscores? $lower $ident_char*
 @functional_part = @underscores? $upper $ident_char*

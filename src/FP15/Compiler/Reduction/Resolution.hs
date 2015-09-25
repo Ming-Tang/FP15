@@ -52,5 +52,5 @@ loF = lo FNotFound lookupF
 
 -- | The 'synProvider' is the relative module name of the syntax provider.
 synProvider :: [String]
-synProvider = ["Std"]
+synProvider = ["$"]
 -- TODO get module redirection working and use $ instead.

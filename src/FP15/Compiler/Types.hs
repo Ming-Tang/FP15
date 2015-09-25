@@ -93,12 +93,17 @@ data ReducingTag
   = Normal               -- ^ The module is being reduced and is not blocked.
   | Blocked [ModuleName] -- ^ Waiting for modules to be compiled.
   | Finished             -- ^ Module has finished reducing.
-                 deriving (Eq, Ord, Show, Read)
+                 deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData ReducingTag
+
 data ReducingModuleState
   = ReducingModuleState { rmsSS :: StaticState
                         , rmsTag :: ReducingTag
                         , rmsRM :: ReducingModule }
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData ReducingModuleState where
 
 -- | An 'ExprState' represents an expression in various stages of the reduction
 -- stage.
@@ -107,26 +112,32 @@ data ReducingModuleState
 data ExprState = Unresolved ExprAST
                | Unreduced BExpr
                | Reduced Expr
-               deriving (Eq, Ord, Show, Read)
+               deriving (Eq, Ord, Show, Read, Generic)
 
 -- * Compiled
 
 -- | A 'CompiledModule' represents a module with functions in compiled state.
 newtype CompiledModule
   = Compiled (ModuleBody Id Expr FunctionalDefinition FFixity FlFixity)
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData CompiledModule where
 
 data CompiledModuleItem
   = CompiledModuleItem { cmiCM :: CompiledModule
                        , cmiMI :: ModuleInterface
                        , cmiSM :: Maybe SourceMapping }
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData CompiledModuleItem where
 
 -- | A 'CompiledModuleSet' represents a set of compiled modules with module
 -- interface and source mapping (optional) as additional information.
 newtype CompiledModuleSet
   = CompiledModuleSet (Map ModuleName CompiledModuleItem)
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData CompiledModuleSet where
 
 getCompiledModule
   :: CompiledModule -> ModuleBody Id Expr FunctionalDefinition FFixity FlFixity
