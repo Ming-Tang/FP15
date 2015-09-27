@@ -75,10 +75,12 @@ Language Features
 
 Runtime
 =======
+ - [ ] Embed multiple compilation phases within Expr
+ - [ ] Context stack
  - [ ] I/O support
  - [ ] Reference cells and arrays
  - [ ] Actual higher-order functions
- - [ ] Uniqueness typing
+ - [ ] Uniqueness typing enforcement
 
 Code
 ====
