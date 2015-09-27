@@ -2,9 +2,9 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Main where
 import Control.DeepSeq(force)
-import Control.Monad.Error
+import Control.Monad.Error()
 import Data.Map((!))
-import Text.PrettyPrint
+import Text.PrettyPrint()
 import FP15.Parsing()
 import FP15.Parsing.Types
 import FP15.Parsing.Lexer(scanTokens)
@@ -17,7 +17,7 @@ import FP15.Evaluator.Contract()
 import FP15.Compiler
 import FP15.Compiler.Types
 import FP15.Compiler.CompiledModuleSet
-import FP15.Compiler.PrettyPrinting
+import FP15.Compiler.PrettyPrinting()
 import FP15.Compiler.Precedence()
 import FP15.Compiler.Reduction()
 import FP15.Standard(standardCMS)
@@ -58,7 +58,7 @@ main = do
   -- print $ vcat $ prettyCMILines (M ["Main"]) (cmis ! (M ["Main"]))
   let fl = unwrap $ translateCMS cms'
   let s = force $ transMap standardEnv fl
-  res <- fmap unwrap $ runErrorT $ runFP $ (s ! "Main.main") (List [])
+  res <- fmap unwrap $ runFP $ (s ! "Main.main") (List [])
   putStrLn $ disp (res :: FPValue)
   where unwrap (Left x) = error $ disp x
         unwrap (Right x) = force x
