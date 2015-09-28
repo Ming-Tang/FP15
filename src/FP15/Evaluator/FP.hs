@@ -20,8 +20,15 @@ initR = initial
 initS :: S
 initS = ()
 
--- | The 'FP' monad is for executing FP15 code. This monad contains 'IO' and
--- error handling ('RuntimeError').
+-- | The 'FP' monad is the monad for executing FP15 code. It contains the following behaviors:
+--
+-- 1. Side effects ('IO')
+-- 2. Read-only context (@RWST FPEnv@)
+-- 3. Error handling (@ErrorT RuntimeError@)
+--
+-- Since 'ErrorT' is the outermost monad transformer in the transformer stack,
+-- the context is available even if an error has occurred. See the signature of
+-- 'runFP' for more details.
 newtype FP a = FP { unFP :: ErrorT RuntimeError (RWST R W S IO) a }
 
 -- IO (Error RuntimeError a)
@@ -51,8 +58,11 @@ runFP r s = flip (`runRWST` r) s . runErrorT . unFP
 execFP :: FP a -> IO (Either RuntimeError a)
 execFP fp = (\(a, _, _) -> a) <$> runFP initR initS fp
 
-getEnv :: FP FPEnv
+getEnv :: FP R
 getEnv = ask
 
-withEnv :: (FPEnv -> FPEnv) -> FP a -> FP a
+withEnv :: (R -> R) -> FP a -> FP a
 withEnv = local
+
+getClosure :: FP (R, S)
+getClosure = (,) <$> getEnv <*> get
