@@ -23,6 +23,7 @@ import FP15.Compiler.Reduction()
 import FP15.Standard(standardCMS)
 import FP15.Evaluator.Standard(standardEnv)
 import FP15.Evaluator.Translation(transMap)
+import FP15.Evaluator.FP(execFP)
 
 main :: IO ()
 {-

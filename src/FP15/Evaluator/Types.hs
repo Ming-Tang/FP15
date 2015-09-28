@@ -16,7 +16,7 @@ import FP15.Evaluator.RuntimeError
 import FP15.Evaluator.FPRef
 import FP15.Evaluator.FPValue
 import FP15.Evaluator.ContractType
-import FP15.Evaluator.FP
+import FP15.Evaluator.FP(FP(..))
 
 -- * Expression
 
@@ -31,6 +31,8 @@ data BaseExpr = Const Value
               | Filter BaseExpr
               | While BaseExpr BaseExpr
               | Mark Ident BaseExpr
+              | Get Int
+              | With BaseExpr
               deriving (Eq, Show, Read, Generic)
 
 instance NFData BaseExpr

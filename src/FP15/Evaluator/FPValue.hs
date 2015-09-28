@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
 module FP15.Evaluator.FPValue where
-import GHC.Generics
+import GHC.Generics(Generic)
 import Control.DeepSeq
 import FP15.Disp
 import FP15.Value

@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleInstances, DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
 module FP15.Evaluator.Translation where
 import Prelude hiding (lookup)
 import Control.Monad
@@ -13,6 +14,8 @@ import FP15.Evaluator.Types
 import FP15.Evaluator.Error
 import FP15.Evaluator.Standard
 import FP15.Evaluator.Contract
+import FP15.Evaluator.FP
+import FP15.Evaluator.FPEnv
 
 conv :: Either RuntimeError a -> FP a
 conv = either throwError (return . id)
@@ -57,11 +60,23 @@ trans e (Map f) = evalMap $ trans e f
 trans e (Filter p) = evalFilter $ trans e p
 
 trans e (While p f) = body where
-  body (force -> x) = do
+  body (force -> !x) = do
     b <- predOnlyX p' x
     if b then f' x >>= body
     else return x
   (p', f') = (trans e p, trans e f)
+
+trans e (Get i) = body where
+  body (force -> !x) = do
+    env <- getEnv
+    case get i env of
+      Nothing -> error "Access violation"
+      Just v -> return v
+
+trans e (With e1) = body where
+  inner = force $ trans e e1
+  body (force -> !x) = do
+    withEnv (push x) $ inner x
 
 trans e (Mark k x) = markFunc (noLoc k) . trans e x
 
