@@ -32,7 +32,10 @@ eof { Token EOF _ _ }
 ";" { Token Semicolon _ _ }
 "#" { Token Hash _ _ }
 "#:" { Token Let _ _ }
+"#=" { Token With _ _ }
 "=" { (viewOperatorS "=" -> Just $$) }
+
+get { Token (Get $$) _ _ }
 
 function { (viewFunction -> Just $$) }
 functional { (viewFunctional -> Just $$) }
@@ -102,6 +105,8 @@ expr_list : expr_list_head { $1 }
 primary : function { TFunc $1 }
         | literal { $1 }
         | indexer { TIndex $1 }
+        | get { TGet $1 }
+        | "#=" primary { TWith $2 }
 
         | "#:" "[" binding_list "]" primary { TLet $3 $5 }
         | "(" f_infix_body ")" { parseFInfix $2 }

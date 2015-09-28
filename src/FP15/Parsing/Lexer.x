@@ -44,7 +44,6 @@ $neg = \~
 
 @string = \" ([^\\\"]|\\.)* \"
 
-@pos_dec = [1-9][0-9]*
 @dec = 0|[1-9][0-9]*
 @oct = ("#o"|"#O") [0-7]+
 @hex = ("#x"|"#X") [0-9a-fA-F]+
@@ -58,7 +57,7 @@ $neg = \~
 
 @number = @integer | @real
 
-@get = \# (\^+ | \^ @pos_dec)
+@get = \# (\^+ | \^ @dec)
 
 @hash = \# ($ident_char+)
 

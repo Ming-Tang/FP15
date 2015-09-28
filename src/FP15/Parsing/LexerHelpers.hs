@@ -175,7 +175,7 @@ readChar ('#':'\\':cs) = maybe (illegalToken $ "Unrecognized char name: " ++ cs)
 readChar s0 = illegalToken "Invalid character literal."
 
 readGet ('#':'^':rest)
-  | all (== '^') rest = return $ Get (1 + length rest)
+  | all (== '^') rest = return $ Get (length rest)
   | otherwise = return $ Get (read rest)
 
 readGet _ = error "readGet: Invalid #^ form."

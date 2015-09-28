@@ -52,6 +52,10 @@ data ExprAST = TValue Value
              | TIndex Int
              | TId
 
+             | TWith ExprAST
+             | TGet !Int
+
+
              | TIf ExprAST ExprAST ExprAST
              | TFork [ExprAST]
              | THook [ExprAST]
@@ -77,6 +81,12 @@ instance Disp ExprAST where
     lparen <> fsep (map (nest 2 . pretty) xs) <> rparen
   pretty (TIndex i) = text ("#" ++ show i)
   pretty TId = text "_"
+
+  pretty (TWith e) = text "#=" <+> lbrace <> pretty e <> rbrace
+  pretty (TGet 0) = text "#^"
+  pretty (TGet 1) = text "#^^"
+  pretty (TGet 2) = text "#^^^"
+  pretty (TGet i) = text "#^" <> text (show i)
 
   pretty (TIf p a b)
     = lbrace <> pretty p <> text ":" <> pretty a
