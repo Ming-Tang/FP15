@@ -31,8 +31,6 @@ initS = ()
 -- 'runFP' for more details.
 newtype FP a = FP { unFP :: ErrorT RuntimeError (RWST R W S IO) a }
 
--- IO (Error RuntimeError a)
-
 deriving instance MonadIO FP
 deriving instance MonadFix FP
 deriving instance MonadError RuntimeError FP
