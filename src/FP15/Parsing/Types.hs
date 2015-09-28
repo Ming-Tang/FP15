@@ -1,5 +1,5 @@
 module FP15.Parsing.Types where
-import FP15.Types
+import FP15.Types hiding (XExpr)
 
 data TokenData
   = EOF

@@ -119,6 +119,11 @@ toBE (TOperator lo@(Loc l o)) = do
   (Loc _ (Fixity _ _ f)) <- lookupFOpOnly lo
   return $ Func $ Loc l $ AN f
 toBE (TDotOperator f) = return $ Func $ lrn f
+
+toBE (TWith e) = With <$> toBE e
+-- TODO actually validate index with Reader monad
+toBE (TGet i) = return $ Get i
+
 toBE (TApp fl es) = App (lrn fl) <$> mapM toBE es
 toBE (TIndex i) =
   return (baseA "Fork" [ pId, Const $ Int $ fromIntegral i]

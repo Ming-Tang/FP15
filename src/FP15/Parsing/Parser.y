@@ -9,7 +9,7 @@ import Data.Maybe
 import Data.List.Split
 import FP15.Parsing.Types
 import FP15.Parsing.Lexer
-import FP15.Types
+import FP15.Types hiding (Get, With)
 import FP15.Value
 }
 

@@ -16,6 +16,8 @@ import FP15.Value
 data XExpr f fl x = Const Value
                   | App fl [XExpr f fl x]
                   | Func f
+                  | Get Int
+                  | With (XExpr f fl x)
                   | Ex !x
 
 deriving instance (Eq x, Eq f, Eq fl) => Eq (XExpr f fl x)
@@ -38,6 +40,8 @@ instance (Disp f, Disp fl, Disp x) => Disp (XExpr f fl x) where
   pretty (Const v) = pretty v
   pretty (App f xs) = prettyApp (pretty f) $ map pretty xs
   pretty (Func f) = pretty f
+  pretty (Get i) = pretty (TGet i)
+  pretty (With e) = text "#=" <+> pretty e
   pretty (Ex x) = pretty x
 
 -- | An FP15 expression with the specified name type.
@@ -54,7 +58,6 @@ data ExprAST = TValue Value
 
              | TWith ExprAST
              | TGet !Int
-
 
              | TIf ExprAST ExprAST ExprAST
              | TFork [ExprAST]
