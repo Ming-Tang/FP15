@@ -20,7 +20,7 @@ data Extended = Lambda (FPValue -> FPValue)
 instance NFData Extended
 
 fromFPValue :: FPValue -> Value
-fromFPValue = fmap undefined -- TODO should be a Maybe function...
+fromFPValue = fmap (\_ -> error "fromFPValue") -- TODO should be a Maybe function...
 
 instance Disp Extended where
   disp (Lambda _) = "#<lambda>#"
@@ -36,7 +36,7 @@ class FPValueConvertible t where
 default (FPValue)
 
 instance FPValueConvertible Value where
-  toFPValue = fmap undefined
+  toFPValue = fmap (\_ -> error "toFPValue")
 
 instance FPValueConvertible FPValue where
   toFPValue = id

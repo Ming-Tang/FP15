@@ -104,10 +104,10 @@ index (xs, i) = case res of
                       res = get $ until cond upd (xs, i)
                       cond (l, m) = null l || m == 0
                       upd (_:as, k) = (as, k - 1)
-                      upd _ = undefined
+                      upd _ = error "index: upd: impossible"
                       get (a:_, 0) = Just a
                       get ([], _) = Nothing
-                      get (a:_, _) = undefined
+                      get (a:_, _) = error "index: get: impossible"
 
 zipn :: [[a]] -> [[a]]
 zipn xs = if all (not . null) xs

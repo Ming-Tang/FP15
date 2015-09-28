@@ -43,5 +43,5 @@ toBaseExpr (T.App f@(Loc _ nf) (length -> n)) =
 
 ta :: T.Expr -> Maybe (String, [Either BaseExprError BaseExpr])
 ta (T.App (Loc _ (N ["Std"] n)) (map toBaseExpr -> xs)) = Just (n, xs)
-ta _ = undefined
+ta x = error $ "ta: " ++ show x
 

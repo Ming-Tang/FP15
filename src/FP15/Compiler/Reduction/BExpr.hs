@@ -213,10 +213,10 @@ sso a = (:[]) <$> ss a
 -- ** Comma Notation
 
 toC :: LookupOp e => [Either Int ExprAST] -> CResult e CommaInfix ExprAST ExprAST
-toC es = undefined
+toC es = error $ "toC: " ++ show es
 
 toCN :: LookupOp e => ExprAST -> CResult e CommaNode ExprAST ExprAST
-toCN e = undefined
+toCN e = error $ "toCN: " ++ show e
 
 uciToExprAST :: UncommaInfix ExprAST ExprAST -> ExprAST
 uciToExprAST (UInfix _ xs)
