@@ -24,6 +24,8 @@ toBaseExpr :: T.Expr -> Either BaseExprError BaseExpr
 toBaseExpr (T.Ex _) = error "Ex"
 toBaseExpr (T.Const c) = return $ E.Const c
 toBaseExpr (T.Func lf) = return $ E.Func $ fmap disp lf
+toBaseExpr (T.With e) = E.With <$> toBaseExpr e
+toBaseExpr (T.Get i) = return $ E.Get i
 
 toBaseExpr (ta -> Just ("BaseF", [f])) = Left BaseF
 toBaseExpr (ta -> Just ("If", [p, a])) =
