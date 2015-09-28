@@ -37,8 +37,10 @@ data TokenData
   | Comma
   | Semicolon
   | Dollar
-  | Quote -- '
-  | Let   -- #:
+  | Quote    -- '
+  | Let      -- #:
+  | With     -- #=
+  | Get !Int -- #^ #^^ #^4
   | Hash
   deriving (Eq, Ord, Show, Read)
 

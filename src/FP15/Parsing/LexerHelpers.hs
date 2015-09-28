@@ -95,7 +95,7 @@ readString :: String -> TokenResult
 
 readOperator, readFunction, readFunctional :: String -> TokenResult
 readNumber' :: Bool -> String -> TokenResult
-readNumber, readHash, readChar :: String -> TokenResult
+readNumber, readGet, readHash, readChar :: String -> TokenResult
 
 readString s0@('"':s) = parse s "" where
   parse :: String -> String -> TokenResult
@@ -134,7 +134,7 @@ readDotOperator dots@('.':(!s)) =
     [] -> error "readDotOperator: splitOn returned an empty list."
     xs -> return $ DotOperator $ N (init xs) (last xs)
 
-readDotOperator _ = error "readDotOperator: Not a dot operator"
+readDotOperator _ = error "readDotOperator: Not a dot operator."
 
 readOperator !s
   | all (== '.') s =
@@ -173,6 +173,12 @@ readChar ('#':'\\':cs) = maybe (illegalToken $ "Unrecognized char name: " ++ cs)
                        then Just (read $ "'\\x" ++ cs' ++ "'") else Nothing
              _ -> Nothing
 readChar s0 = illegalToken "Invalid character literal."
+
+readGet ('#':'^':rest)
+  | all (== '^') rest = return $ Get (1 + length rest)
+  | otherwise = return $ Get (read rest)
+
+readGet _ = error "readGet: Invalid #^ form."
 
 readHash "#" = return Hash
 readHash "#t" = return TrueLiteral

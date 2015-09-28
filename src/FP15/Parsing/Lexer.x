@@ -44,6 +44,7 @@ $neg = \~
 
 @string = \" ([^\\\"]|\\.)* \"
 
+@pos_dec = [1-9][0-9]*
 @dec = 0|[1-9][0-9]*
 @oct = ("#o"|"#O") [0-7]+
 @hex = ("#x"|"#X") [0-9a-fA-F]+
@@ -56,6 +57,9 @@ $neg = \~
 @real = $neg? @dec (@frac @exp | @frac | @exp)
 
 @number = @integer | @real
+
+@get = \# (\^+ | \^ @pos_dec)
+
 @hash = \# ($ident_char+)
 
 @newlines = ($ws* \n)+ $ws*
@@ -70,8 +74,10 @@ tokens :-
   @module_part? @function_part { act readFunction }
   @number { act readNumber }
   @char { act readChar }
-  @hash { act readHash }
+  \#\= { act $ const $ return With }
+  @get { act readGet }
   \#\: { act $ const $ return Let }
+  @hash { act readHash }
   \[ { push Bracket LBracket }
   \] { pop Bracket RBracket }
   \{ { push Brace LBrace }
