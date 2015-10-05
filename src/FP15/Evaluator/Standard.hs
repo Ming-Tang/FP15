@@ -1,11 +1,13 @@
 {-# LANGUAGE RankNTypes, ExistentialQuantification, ImpredicativeTypes #-}
 module FP15.Evaluator.Standard where
+import FP15.Disp
 import Data.List(transpose, sort)
 import Prelude hiding (div)
 import Control.Monad(liftM)
 import qualified Data.Map.Strict as M
 import Data.Maybe(isJust)
 import FP15.Value
+import FP15.Evaluator.FP (runIO)
 import FP15.Evaluator.Types
 import FP15.Evaluator.Error
 import FP15.Evaluator.Contract
@@ -50,6 +52,16 @@ funcE f v = do
   y <- f x
   return $ toFPValue y
 
+ioFunc' :: FPValueConvertible b => Contract a -> (a -> IO b) -> FPFunc
+ioFunc' c f x = do
+  z <- ensure c x
+  w <- runIO $ f z
+  return $ toFPValue w
+  --liftM (runIO . f) (ensure c x)
+
+ioFunc :: (ContractConvertible a, FPValueConvertible b) => (a -> IO b) -> FPFunc
+ioFunc = ioFunc' asContract
+
 ensureFunc a b f x = ensure a x >>= f >>= ensure b
 ensureIn = (`ensureFunc` AnyC)
 ensureOut = (AnyC `ensureFunc`)
@@ -72,8 +84,8 @@ cons :: (FPValue, [FPValue]) -> [FPValue]
 decons :: Cons FPValue [FPValue] -> (FPValue, [FPValue])
 distl :: (FPValue, [FPValue]) -> [(FPValue, FPValue)]
 distr :: ([FPValue], FPValue) -> [(FPValue, FPValue)]
-hd :: (Cons FPValue [FPValue]) -> FPValue
-tl :: (Cons FPValue [FPValue]) -> [FPValue]
+hd :: Cons FPValue [FPValue] -> FPValue
+tl :: Cons FPValue [FPValue] -> [FPValue]
 
 cons (a, b) = a : b
 decons (Cons (x, xs)) = (x, xs)
@@ -111,7 +123,7 @@ index (xs, i) = case res of
 
 zipn :: [[a]] -> [[a]]
 zipn xs = if all (not . null) xs
-          then (map head xs) : (zipn (map tail xs))
+          then map head xs : zipn (map tail xs)
           else []
 
 standardEnv', standardEnv :: M.Map String FPFunc
@@ -167,7 +179,7 @@ standardEnv' = M.fromList [
 
   , ("and", func (and :: [Bool] -> Bool))
   , ("or", func (or :: [Bool] -> Bool))
-  , ("not", func $ not)
+  , ("not", func not)
 
   , ("is0", func isZero)
   , ("isT", eqFunc $ Bool True)
@@ -198,4 +210,5 @@ standardEnv' = M.fromList [
   , ("zip", func (zipn :: [[FPValue]] -> [[FPValue]]))
   , ("index", funcE index)
   , ("len", func (length :: [FPValue] -> Int))
+
   ] :: M.Map String FPFunc

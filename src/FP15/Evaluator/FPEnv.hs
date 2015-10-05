@@ -11,8 +11,8 @@ instance NFData FPEnv where
 initial :: FPEnv
 initial = FPEnv []
 
-get :: Int -> FPEnv -> Maybe FPValue
-get i (FPEnv vs) = safeIndex i vs where
+getCtx :: Int -> FPEnv -> Maybe FPValue
+getCtx i (FPEnv vs) = safeIndex i vs where
   safeIndex n (x:xs) | n <= 0 = Just x
                      | otherwise = safeIndex (n - 1) xs
   safeIndex _ [] = Nothing

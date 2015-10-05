@@ -12,12 +12,16 @@ import FP15.Evaluator.FPRef
 -- includes the well-behaved values and the unserializable values such as
 -- functions and the @RealWorld@.
 type FPValue = XValue Extended
-data Extended = Lambda (FPValue -> FPValue)
-              | Ref (FPRef FPValue)
-              | RealWorld
+data Extended = Lambda !(FPValue -> FPValue)
+              | Ref !(FPRef FPValue)
+              | RealWorld !RealWorld
               deriving (Generic)
 
 instance NFData Extended
+
+newtype RealWorld = RW () deriving (Eq, Show, Read, Generic)
+
+instance NFData RealWorld
 
 fromFPValue :: FPValue -> Value
 fromFPValue = fmap (\_ -> error "fromFPValue") -- TODO should be a Maybe function...
@@ -25,7 +29,7 @@ fromFPValue = fmap (\_ -> error "fromFPValue") -- TODO should be a Maybe functio
 instance Disp Extended where
   disp (Lambda _) = "#<lambda>#"
   disp (Ref _) = "#<ref>"
-  disp RealWorld = "#<RealWorld>"
+  disp (RealWorld _) = "#<RealWorld>"
 
 instance Disp FPValue where
   pretty (Extended x) = pretty x
