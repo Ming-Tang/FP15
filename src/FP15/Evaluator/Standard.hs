@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes, ExistentialQuantification, ImpredicativeTypes #-}
 module FP15.Evaluator.Standard where
 import FP15.Disp
+import Control.Applicative hiding (Const)
 import Data.List(transpose, sort)
 import Prelude hiding (div)
 import Control.Monad(liftM)
@@ -61,6 +62,12 @@ ioFunc' c f x = do
 
 ioFunc :: (ContractConvertible a, FPValueConvertible b) => (a -> IO b) -> FPFunc
 ioFunc = ioFunc' asContract
+
+-- cases for IOFunc
+--   * () -> IO ()        -- RealWorld^ -> RealWorld^
+--   * args -> IO ()      -- RealWorld^ & args -> RealWorld^
+--   * () -> IO ret       -- RealWorld^ -> {RealWorld^, arg}
+--   * args -> IO ret     -- RealWorld^ & args -> {RealWorld, arg}
 
 ensureFunc a b f x = ensure a x >>= f >>= ensure b
 ensureIn = (`ensureFunc` AnyC)
@@ -211,4 +218,6 @@ standardEnv' = M.fromList [
   , ("index", funcE index)
   , ("len", func (length :: [FPValue] -> Int))
 
+  , ("printLn", ioFunc (\(RW, s) -> putStrLn s >> return RW))
+  , ("readLn", ioFunc (\RW -> (\x -> (RW, Str x)) <$> (getLine :: IO String)))
   ] :: M.Map String FPFunc

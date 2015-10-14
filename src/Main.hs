@@ -59,7 +59,7 @@ main = do
   -- print $ vcat $ prettyCMILines (M ["Main"]) (cmis ! (M ["Main"]))
   let fl = unwrap $ translateCMS cms'
   let s = force $ transMap standardEnv fl
-  res <- fmap unwrap $ execFP $ (s ! "Main.main") (List [])
+  res <- fmap unwrap $ execFP $ (s ! "Main.main") (Extended $ RealWorld RW)
   putStrLn $ disp (res :: FPValue)
   where unwrap (Left x) = error $ disp x
         unwrap (Right x) = force x

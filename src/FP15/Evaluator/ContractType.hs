@@ -87,6 +87,9 @@ default (FPValue)
 instance ContractConvertible FPValue where
   asContract = AnyC
 
+instance ContractConvertible RealWorld where
+  asContract = RealWorldC
+
 instance ContractConvertible Value where
   asContract = ValueC
 

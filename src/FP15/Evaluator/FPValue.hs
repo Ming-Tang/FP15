@@ -19,7 +19,7 @@ data Extended = Lambda !(FPValue -> FPValue)
 
 instance NFData Extended
 
-newtype RealWorld = RW () deriving (Eq, Show, Read, Generic)
+data RealWorld = RW deriving (Eq, Show, Read, Ord, Generic)
 
 instance NFData RealWorld
 
@@ -38,6 +38,9 @@ instance Disp FPValue where
 class FPValueConvertible t where
   toFPValue :: t -> FPValue
 default (FPValue)
+
+instance FPValueConvertible RealWorld where
+  toFPValue = Extended . RealWorld
 
 instance FPValueConvertible Value where
   toFPValue = fmap (\_ -> error "toFPValue")
