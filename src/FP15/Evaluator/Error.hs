@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 module FP15.Evaluator.Error where
 import Control.Monad.Error
+import FP15.Disp
 import FP15.Name
 import FP15.Evaluator.Types
 
@@ -15,7 +16,7 @@ raiseContractViolation :: MonadError RuntimeError m => Contract b -> FPValue -> 
 raisePassMismatchError :: MonadError RuntimeError m => Int -> Int -> m a
 raiseErrorMessage :: MonadError RuntimeError m => String -> m a
 
-raiseContractViolation c v = runtimeError $ ContractViolation c v
+raiseContractViolation c v = runtimeError $ ContractViolation (show c) (disp v)
 raisePassMismatchError m n = runtimeError $ PassMismatchError m n
 raiseErrorMessage = runtimeError . ErrorMessage
 

@@ -6,8 +6,6 @@ import Control.Monad.Error
 import Text.PrettyPrint
 import FP15.Disp
 import FP15.Name
-import FP15.Evaluator.FPValue
-import FP15.Evaluator.ContractType
 
 -- * Error and Diagnostics
 
@@ -20,9 +18,9 @@ emptyStackTrace :: StackTrace
 emptyStackTrace = StackTrace []
 
 -- | An FP15 runtime error.
-data RuntimeError = forall a. ContractViolation { contractViolated :: Contract a
-                                                , offendingValue :: FPValue
-                                                , stackTrace :: StackTrace }
+data RuntimeError = ContractViolation { contractViolated :: String
+                                      , offendingValue :: String
+                                      , stackTrace :: StackTrace }
                   | PassMismatchError { expectedLength :: Int
                                       , actualLength :: Int
                                       , stackTrace :: StackTrace }

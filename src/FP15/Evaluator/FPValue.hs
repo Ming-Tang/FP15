@@ -3,10 +3,13 @@
 {-# LANGUAGE DeriveGeneric #-}
 module FP15.Evaluator.FPValue where
 import GHC.Generics(Generic)
+import Data.IORef
 import Control.DeepSeq
 import FP15.Disp
 import FP15.Value
-import FP15.Evaluator.FPRef
+
+type Rev = (Int, Int)
+data FPRef a = FPRef Rev (IORef a)
 
 -- | The 'FPValue' type represents all possible values in the FP15 runtime. This
 -- includes the well-behaved values and the unserializable values such as

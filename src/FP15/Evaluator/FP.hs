@@ -11,8 +11,9 @@ import Control.Monad.RWS.Strict
 import Control.Monad.Error
 import FP15.Evaluator.FPEnv(FPEnv(..), initial)
 import FP15.Evaluator.RuntimeError
+import FP15.Evaluator.FPValue
 
-type R = FPEnv
+type R = FPEnv FPValue
 type W = ()
 type S = ()
 
