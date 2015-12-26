@@ -136,6 +136,7 @@ standardEnv' = M.fromList [
   , ("sub", func $ subLike sub)
   , ("mul", foldN mul (IntN 1))
   , ("div", func $ subLike div)
+  , ("mod", func $ subLike N.mod)
 
   , ("sum", foldN add (IntN 0))
   , ("prod", foldN mul (IntN 1))
@@ -155,7 +156,6 @@ standardEnv' = M.fromList [
   , ("le", func2 lessEq)
   , ("neq", func2 equals)
   , ("nne", func2 notEquals)
-  -- TODO range
 
   , ("cons", func cons)
   , ("decons", func decons)
@@ -167,7 +167,7 @@ standardEnv' = M.fromList [
 
   , ("and", func (and :: [Bool] -> Bool))
   , ("or", func (or :: [Bool] -> Bool))
-  , ("not", func $ not)
+  , ("not", func not)
 
   , ("is0", func isZero)
   , ("isT", eqFunc $ Bool True)
