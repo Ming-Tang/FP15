@@ -52,6 +52,6 @@ instance Disp Value where
    lbrack <> fsep (punctuate comma $ map (nest 2 . pretty) xs) <> rbrack
 
   -- To prevent a compiler warning.
-  pretty (Extended _) = error "instance Disp Value: impossible"
+  pretty (Extended _) = error "instance Disp Value: pretty: impossible"
 
   disp = show . pretty

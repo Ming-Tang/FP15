@@ -218,6 +218,6 @@ standardEnv' = M.fromList [
   , ("index", funcE index)
   , ("len", func (length :: [FPValue] -> Int))
 
-  , ("printLn", ioFunc (\(RW, s) -> putStrLn s >> return RW))
+  , ("printLn", ioFunc (\(RW, Str s) -> putStrLn s >> return RW))
   , ("readLn", ioFunc (\RW -> (\x -> (RW, Str x)) <$> (getLine :: IO String)))
   ] :: M.Map String FPFunc
