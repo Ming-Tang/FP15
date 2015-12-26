@@ -2,6 +2,7 @@ module FP15.Evaluator.Number (module FP15.Evaluator.Number, Number(..)) where
 import Prelude hiding (div)
 import Prelude as P
 import Data.Char(ord)
+import Data.Fixed(mod')
 import FP15.Evaluator.Types
 
 -- | 'zeroN' is number for zero as integer. Note that to check if a number is
@@ -97,6 +98,7 @@ add = numericBinOp (+) (+)
 sub = numericBinOp (-) (-)
 mul = numericBinOp (*) (*)
 div = numericBinOp quot (/)
+mod = numericBinOp P.mod mod'
 sgn = numericUnOp signum signum
 abs = numericUnOp P.abs P.abs
 neg = numericUnOp P.negate P.negate
