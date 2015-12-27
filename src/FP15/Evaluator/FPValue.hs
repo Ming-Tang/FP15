@@ -27,9 +27,7 @@ data RealWorld = RW deriving (Eq, Show, Read, Ord, Generic)
 instance NFData RealWorld
 
 fromFPValue :: FPValue -> Maybe Value
-fromFPValue (Extended _) = Nothing
--- XXX partial function is used here
-fromFPValue v = Just $ fmap (error . ("fromFPValue: " ++) . disp) v
+fromFPValue = convToValue
 
 instance Disp Extended where
   disp (Lambda _) = "#<lambda>#"
@@ -37,13 +35,7 @@ instance Disp Extended where
   disp (RealWorld _) = "#<RealWorld>"
 
 instance Disp FPValue where
-  pretty (Extended x) = pretty x
-  -- XXX fix partial function problem for now
-  pretty v = pretty "<...>"
-
-  pretty v = case fromFPValue v of
-              Nothing -> undefined
-              Just v' -> pretty v'
+  pretty = prettyXValue pretty
 
 class FPValueConvertible t where
   toFPValue :: t -> FPValue

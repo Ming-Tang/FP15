@@ -5,6 +5,7 @@
 module FP15.Value where
 import GHC.Generics
 import Control.DeepSeq
+import Control.Applicative
 import FP15.Xtn
 import FP15.Disp
 import Text.PrettyPrint
@@ -38,7 +39,33 @@ type Value = XValue Void
 instance NFData x => NFData (XValue x)
 instance NFData Value
 
-instance Disp Value where
+convXValue f = conv where
+  conv (Bool b) = Bool b
+  conv (Char c) = Char c
+  conv (Int i) = Int i
+  conv (Real r) = Real r
+  conv (Symbol s) = Symbol s
+  conv (String s) = String s
+  conv (List xs) = List $ map conv xs
+  conv (Extended x) = Extended x
+
+convXValueM f = conv where
+  conv (Bool b) = pure $ Bool b
+  conv (Char c) = pure $ Char c
+  conv (Int i) = pure $ Int i
+  conv (Real r) = pure $ Real r
+  conv (Symbol s) = pure $ Symbol s
+  conv (String s) = pure $ String s
+  conv (List xs) = List <$> mapM conv xs
+  conv (Extended x) = f x
+
+convToValue :: XValue t -> Maybe (XValue Void)
+convToValue = convXValueM (const Nothing)
+
+-- | The 'prettyXValue' function pretty prints an 'XValue' like 'Value's except
+-- the 'Extended' case is pretty printed with a custom function.
+prettyXValue :: (t -> Doc) -> XValue t -> Doc
+prettyXValue f = pretty where
   pretty (Bool False) = text "#f"
   pretty (Bool True) = text "#t"
   pretty (Char c) = text ("#\\" ++ [c])
@@ -50,8 +77,10 @@ instance Disp Value where
   pretty (String s) = text (show s) -- doesn't handle escape well
   pretty (List xs) =
    lbrack <> fsep (punctuate comma $ map (nest 2 . pretty) xs) <> rbrack
+  pretty (Extended x) = f x
 
+instance Disp Value where
   -- To prevent a compiler warning.
-  pretty (Extended _) = error "instance Disp Value: pretty: impossible"
+  pretty = prettyXValue (\_ -> error "instance Disp Value: pretty: impossible")
 
   disp = show . pretty
