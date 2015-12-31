@@ -2,6 +2,7 @@ module FP15.Compiler.Reduction.Resolution (
   RResult
 , ResolutionError(..)
 , resolveExpr
+, synProvider
 ) where
 import Text.PrettyPrint
 import Control.Monad.Error

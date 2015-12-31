@@ -43,6 +43,9 @@ instance FPValueConvertible Sym where
 -- decomposed into a Haskell value of t.
 data Contract t where
   AnyC :: Contract FPValue
+
+  RealWorldC :: Contract RealWorld
+
   ValueC :: Contract Value
 
   BoolC :: Contract Bool
@@ -83,6 +86,9 @@ default (FPValue)
 
 instance ContractConvertible FPValue where
   asContract = AnyC
+
+instance ContractConvertible RealWorld where
+  asContract = RealWorldC
 
 instance ContractConvertible Value where
   asContract = ValueC

@@ -94,13 +94,6 @@ tokens :-
 
 {
 
-instance Functor Alex where
-  fmap = liftM
-
-instance Applicative Alex where
-  pure = return
-  (<*>) = liftM2 ($)
-
 type AlexUserState = State
 
 alexInitUserState :: AlexUserState

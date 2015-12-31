@@ -38,8 +38,10 @@ validateList c xs =
     return $ catMaybes valids
 
 validate AnyC x = Just x
+validate RealWorldC rw@(Extended (RealWorld RW)) = Just RW
+validate RealWorldC _ = Nothing
 validate ValueC (Extended _) = Nothing
-validate ValueC v = Just $ fromFPValue v
+validate ValueC v = fromFPValue v
 
 validate BoolC (Bool b) = Just b
 validate SymbolC (Symbol s) = Just (Sym s)

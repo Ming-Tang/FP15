@@ -3,14 +3,17 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
-module FP15.Evaluator.FP where
+module FP15.Evaluator.FP (
+  module FP15.Evaluator.FP, module Control.Monad.RWS.Strict, module Control.Monad.Error
+) where
 import Control.Applicative
 import Control.Monad.RWS.Strict
 import Control.Monad.Error
 import FP15.Evaluator.FPEnv(FPEnv(..), initial)
 import FP15.Evaluator.RuntimeError
+import FP15.Evaluator.FPValue
 
-type R = FPEnv
+type R = FPEnv FPValue
 type W = ()
 type S = ()
 
@@ -58,6 +61,9 @@ execFP fp = (\(a, _, _) -> a) <$> runFP initR initS fp
 
 getEnv :: FP R
 getEnv = ask
+
+runIO :: IO a -> FP a
+runIO = liftIO
 
 withEnv :: (R -> R) -> FP a -> FP a
 withEnv = local

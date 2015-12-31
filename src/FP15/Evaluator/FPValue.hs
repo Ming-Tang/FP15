@@ -3,37 +3,46 @@
 {-# LANGUAGE DeriveGeneric #-}
 module FP15.Evaluator.FPValue where
 import GHC.Generics(Generic)
+import Data.IORef
 import Control.DeepSeq
 import FP15.Disp
 import FP15.Value
-import FP15.Evaluator.FPRef
+
+type Rev = (Int, Int)
+data FPRef a = FPRef Rev (IORef a)
 
 -- | The 'FPValue' type represents all possible values in the FP15 runtime. This
 -- includes the well-behaved values and the unserializable values such as
 -- functions and the @RealWorld@.
 type FPValue = XValue Extended
-data Extended = Lambda (FPValue -> FPValue)
-              | Ref (FPRef FPValue)
-              | RealWorld
+data Extended = Lambda !(FPValue -> FPValue)
+              | Ref !(FPRef FPValue)
+              | RealWorld !RealWorld
               deriving (Generic)
 
 instance NFData Extended
 
-fromFPValue :: FPValue -> Value
-fromFPValue = fmap (\_ -> error "fromFPValue") -- TODO should be a Maybe function...
+data RealWorld = RW deriving (Eq, Show, Read, Ord, Generic)
+
+instance NFData RealWorld
+
+fromFPValue :: FPValue -> Maybe Value
+fromFPValue = convToValue
 
 instance Disp Extended where
   disp (Lambda _) = "#<lambda>#"
   disp (Ref _) = "#<ref>"
-  disp RealWorld = "#<RealWorld>"
+  disp (RealWorld _) = "#<RealWorld>"
 
 instance Disp FPValue where
-  pretty (Extended x) = pretty x
-  pretty v = pretty $ fromFPValue v
+  pretty = prettyXValue pretty
 
 class FPValueConvertible t where
   toFPValue :: t -> FPValue
 default (FPValue)
+
+instance FPValueConvertible RealWorld where
+  toFPValue = Extended . RealWorld
 
 instance FPValueConvertible Value where
   toFPValue = fmap (\_ -> error "toFPValue")
