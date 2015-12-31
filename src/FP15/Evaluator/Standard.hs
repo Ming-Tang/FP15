@@ -4,7 +4,7 @@ import FP15.Disp
 import Control.Applicative hiding (Const)
 import Data.List(transpose, sort)
 import Prelude hiding (div)
-import Control.Monad(liftM)
+import Control.Monad(liftM, (>=>))
 import qualified Data.Map.Strict as M
 import Data.Maybe(isJust)
 import FP15.Value
@@ -13,6 +13,10 @@ import FP15.Evaluator.Types
 import FP15.Evaluator.Error
 import FP15.Evaluator.Contract
 import FP15.Evaluator.Number as N
+
+-- * Function Creation Helpers
+
+-- ** Building Blocks & Contract Enforcement
 
 -- | The 'ensure' function validates a value against a contract, and returns the
 -- matched value, or else, raise a 'ContractViolation' error.
@@ -53,56 +57,30 @@ funcE f v = do
   y <- f x
   return $ toFPValue y
 
-ioFunc' :: FPValueConvertible b => Contract a -> (a -> IO b) -> FPFunc
-ioFunc' c f x = do
-  z <- ensure c x
-  w <- runIO $ f z
-  return $ toFPValue w
-  --liftM (runIO . f) (ensure c x)
-
-ioFunc :: (ContractConvertible a, FPValueConvertible b) => (a -> IO b) -> FPFunc
-ioFunc = ioFunc' asContract
-
--- cases for IOFunc
---   * () -> IO ()        -- RealWorld^ -> RealWorld^
---   * args -> IO ()      -- RealWorld^ & args -> RealWorld^
---   * () -> IO ret       -- RealWorld^ -> {RealWorld^, arg}
---   * args -> IO ret     -- RealWorld^ & args -> {RealWorld, arg}
-
 ensureFunc a b f x = ensure a x >>= f >>= ensure b
 ensureIn = (`ensureFunc` AnyC)
 ensureOut = (AnyC `ensureFunc`)
 predOnly = ensureOut BoolC
 
+-- ** Math
+
 numListF, numNEListF :: ([Number] -> Number) -> FPFunc
 foldN :: (Number -> Number -> Number) -> Number -> FPFunc
 foldN1 :: (Number -> Number -> Number) -> FPFunc
+subLike :: (b -> a -> b) -> Cons b [a] -> b
+
 numListF f x = liftM (toFPValue . f) (ensure (ListC NumberC) x)
 numNEListF f x = liftM (toFPValue . f) (ensure (NonEmptyListC NumberC) x)
 foldN f x0 = numListF (foldl f x0)
 foldN1 f = numNEListF (foldl1 f)
+subLike f (Cons (a, b)) = foldl f a b
+
+-- ** Equality and Comparison
 
 eq :: [Value] -> Bool
 eq (a:b:xs) | a == b = eq (b:xs)
             | otherwise = False
 eq _ = True
-
-cons :: (FPValue, [FPValue]) -> [FPValue]
-decons :: Cons FPValue [FPValue] -> (FPValue, [FPValue])
-distl :: (FPValue, [FPValue]) -> [(FPValue, FPValue)]
-distr :: ([FPValue], FPValue) -> [(FPValue, FPValue)]
-hd :: Cons FPValue [FPValue] -> FPValue
-tl :: Cons FPValue [FPValue] -> [FPValue]
-
-cons (a, b) = a : b
-decons (Cons (x, xs)) = (x, xs)
-distl (a, xs) = map (\x -> (a, x)) xs
-distr (xs, a) = map (\x -> (x, a)) xs
-hd (Cons (a, b)) = a
-tl (Cons (a, b)) = b
-
-subLike :: (b -> a -> b) -> Cons b [a] -> b
-subLike f (Cons (a, b)) = foldl f a b
 
 -- | The 'checkFunc' function creates a 'FPFunc' that returns true if and only if
 -- the input value passes the contract provided.
@@ -115,7 +93,28 @@ checkFunc c = return . Bool . isJust . validate c
 eqFunc x v = do v' <- ensure ValueC v
                 return $ Bool $ (==) v' x
 
+-- ** List Processing
+
+cons :: (FPValue, [FPValue]) -> [FPValue]
+decons :: Cons FPValue [FPValue] -> (FPValue, [FPValue])
+distl :: (FPValue, [FPValue]) -> [(FPValue, FPValue)]
+distr :: ([FPValue], FPValue) -> [(FPValue, FPValue)]
+hd :: Cons FPValue [FPValue] -> FPValue
+tl :: Cons FPValue [FPValue] -> [FPValue]
+zipn :: [[a]] -> [[a]]
 index :: ([FPValue], Integer) -> FPResult
+
+cons (a, b) = a : b
+decons (Cons (x, xs)) = (x, xs)
+distl (a, xs) = map (\x -> (a, x)) xs
+distr (xs, a) = map (\x -> (x, a)) xs
+hd (Cons (a, b)) = a
+tl (Cons (a, b)) = b
+
+zipn xs = if all (not . null) xs
+          then map head xs : zipn (map tail xs)
+          else []
+
 index (xs, i) = case res of
                   Nothing -> raiseErrorMessage "Index out of range."
                   Just x -> return x
@@ -128,17 +127,46 @@ index (xs, i) = case res of
                       get ([], _) = Nothing
                       get (a:_, _) = error "index: get: impossible"
 
-zipn :: [[a]] -> [[a]]
-zipn xs = if all (not . null) xs
-          then map head xs : zipn (map tail xs)
-          else []
+-- ** I/O
 
-standardEnv', standardEnv :: M.Map String FPFunc
+ioFunc' :: FPValueConvertible b => Contract a -> (a -> IO b) -> FPFunc
+ioFunc :: (ContractConvertible a, FPValueConvertible b) => (a -> IO b) -> FPFunc
+
+ioFunc' c f x = do
+  z <- ensure c x
+  w <- runIO $ f z
+  return $ toFPValue w
+  --liftM (runIO . f) (ensure c x)
+
+ioFunc = ioFunc' asContract
+
+ioFunc'0 f = ioFunc (\args -> f args >> return RW)
+ioFunc'1 f = ioFunc (f >=> (\y -> return (RW, y)))
+
+ioFunc1'0 f = ioFunc'0 (\(RW, x) -> f x)
+ioFunc0'1 f = ioFunc (\RW -> f >>= (\y -> return (RW, y)))
+ioFunc1'1 f = ioFunc (\(RW, x) -> f x >>= (\y -> return (RW, y)))
+
+-- cases for IOFunc
+--   * () -> IO ()        -- RealWorld^ -> RealWorld^
+--   * args -> IO ()      -- RealWorld^ & args -> RealWorld^
+--   * () -> IO ret       -- RealWorld^ -> {RealWorld^, arg}
+--   * args -> IO ret     -- RealWorld^ & args -> {RealWorld, arg}
+
+-- * Standard Library
+
+-- The 'standardEnv' is the standard environment that includes all standard
+-- function definitions with names prefixed with @Std.@
+standardEnv :: M.Map String FPFunc
+-- 'standardEnv'' is like 'standardEnv' except there is no @Std.@ prefix in
+-- front of all names
+standardEnv' :: M.Map String FPFunc
 
 standardEnv = M.mapKeys (\n -> "Std." ++ n) standardEnv'
 standardEnv' = M.fromList [
     ("_", return)
 
+  -- Math
   , ("min", foldN1 min)
   , ("max", foldN1 max)
 
@@ -174,7 +202,6 @@ standardEnv' = M.fromList [
   , ("le", func2 lessEq)
   , ("neq", func2 equals)
   , ("nne", func2 notEquals)
-  -- TODO range
 
   , ("cons", func cons)
   , ("decons", func decons)
@@ -184,10 +211,12 @@ standardEnv' = M.fromList [
   , ("eq", func eq)
   , ("ne", func (not . eq))
 
+  -- Logic
   , ("and", func (and :: [Bool] -> Bool))
   , ("or", func (or :: [Bool] -> Bool))
   , ("not", func not)
 
+  -- Type Checking
   , ("is0", func isZero)
   , ("isT", eqFunc $ Bool True)
   , ("isF", eqFunc $ Bool False)
@@ -206,6 +235,7 @@ standardEnv' = M.fromList [
   , ("isEmpty", checkFunc EmptyC)
   , ("isCons", checkFunc $ ConsC AnyC listAnyC)
 
+  -- List Processing
   , ("sort", func (sort :: [Value] -> [Value]))
   , ("distl", func distl)
   , ("distr", func distr)
@@ -218,6 +248,13 @@ standardEnv' = M.fromList [
   , ("index", funcE index)
   , ("len", func (length :: [FPValue] -> Int))
 
-  , ("printLn", ioFunc (\(RW, Str s) -> putStrLn s >> return RW))
-  , ("readLn", ioFunc (\RW -> (\x -> (RW, Str x)) <$> (getLine :: IO String)))
+  -- I/O
+  , ("put", ioFunc1'0 (\x -> putStr $ disp (x :: FPValue)))
+  , ("putL", ioFunc1'0 (\x -> putStrLn $ disp (x :: FPValue)))
+  , ("putS", ioFunc1'0 (\(Str s) -> putStr s))
+  , ("putSL", ioFunc1'0 (\(Str s) -> putStrLn s))
+  , ("putC", ioFunc1'0 putChar)
+
+  , ("getL", ioFunc0'1 (Str <$> getLine))
+  , ("getC", ioFunc0'1 getChar)
   ] :: M.Map String FPFunc
