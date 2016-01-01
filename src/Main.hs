@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Main where
 import Control.DeepSeq(force)
+import Control.Applicative((<$>))
 import Control.Monad.Error()
 import Data.Map((!))
 import Text.PrettyPrint()
@@ -18,8 +19,7 @@ import FP15.Compiler
 import FP15.Compiler.Types
 import FP15.Compiler.CompiledModuleSet
 import FP15.Compiler.PrettyPrinting()
-import FP15.Compiler.Precedence()
-import FP15.Compiler.Reduction()
+import FP15.Compiler.Syntax()
 import FP15.Standard(standardCMS)
 import FP15.Evaluator.Standard(standardEnv)
 import FP15.Evaluator.Translation(transMap)
@@ -55,7 +55,7 @@ main = do
   let m' = force $ until ((==) Finished . rmsTag) (unwrap . stepModule) m
   let c = force $ makeCompiledModule m'
   let cms' = force $ addModule (ssMN $ rmsSS m') c standardCMS
-  let (CompiledModuleSet cmis) = force $ cms'
+  let (CompiledModuleSet cmis) = force cms'
   -- print $ vcat $ prettyCMILines (M ["Main"]) (cmis ! (M ["Main"]))
   let fl = unwrap $ translateCMS cms'
   let s = force $ transMap standardEnv fl
@@ -117,4 +117,4 @@ main = do
 
 -- | The 'splitTokens' function splits a string into tokens.
 splitTokens :: String -> Either String [String]
-splitTokens s = scanTokens s >>= return . map (\(Token _ _ str) -> str) . init
+splitTokens s = (map (\(Token _ _ str) -> str) . init) <$> scanTokens s

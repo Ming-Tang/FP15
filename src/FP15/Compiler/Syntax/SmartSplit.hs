@@ -1,4 +1,4 @@
-module FP15.Compiler.SmartSplit (smartSplit) where
+module FP15.Compiler.Syntax.SmartSplit (smartSplit) where
 import Data.Maybe
 import FP15.Types()
 

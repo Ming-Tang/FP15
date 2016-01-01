@@ -4,7 +4,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module FP15.Compiler.Precedence (
+module FP15.Compiler.Syntax.Precedence (
   -- * Examples
   -- $examples
 

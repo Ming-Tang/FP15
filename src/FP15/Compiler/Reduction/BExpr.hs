@@ -13,9 +13,9 @@ import Control.Applicative hiding (Const)
 import FP15.Value
 import FP15.Types
 import FP15.Compiler.Types
-import FP15.Compiler.Precedence
-import FP15.Compiler.SmartSplit
-import FP15.Compiler.CommaNotation
+import FP15.Compiler.Syntax.Precedence
+import FP15.Compiler.Syntax.SmartSplit
+import FP15.Compiler.Syntax.CommaNotation
 
 infixl 6 |>
 infixr 6 <|

@@ -1,4 +1,4 @@
-module FP15.Compiler.CommaNotation (
+module FP15.Compiler.Syntax.CommaNotation (
   CError(..)
 , CommaInfix(..)
 , CommaNode(..)
