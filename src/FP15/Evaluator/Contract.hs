@@ -31,11 +31,10 @@ validate :: Contract a -> FPValue -> Maybe a
 -- values for each element will be returned. Otherwise, 'Nothing' is returned.
 validateList :: Contract a -> [FPValue] -> Maybe [a]
 
-validateList c xs =
-  do
-    let valids = map (validate c) xs
-    guard (all isJust valids)
-    return $ catMaybes valids
+validateList c xs = do
+  let valids = map (validate c) xs
+  guard (all isJust valids)
+  return $ catMaybes valids
 
 validate AnyC x = Just x
 validate RealWorldC rw@(Extended (RealWorld RW)) = Just RW
@@ -76,11 +75,11 @@ validate (OrC a b) x = fromMaybes (validate a x) (validate b x)
         fromMaybes (Just p) Nothing = Just (This p)
         fromMaybes Nothing (Just q) = Just (That q)
         fromMaybes (Just p) (Just q) = Just (These p q)
-validate (EitherC a b) x = xorMaybes (validate a x) (validate b x)
-  where xorMaybes Nothing Nothing = Nothing
-        xorMaybes (Just p) Nothing = Just (Left p)
-        xorMaybes Nothing (Just q) = Just (Right q)
-        xorMaybes (Just p) (Just q) = Nothing
+validate (EitherC a b) x = validate a x `combine` validate b x
+  where combine Nothing Nothing = Nothing
+        combine (Just p) Nothing = Just (Left p)
+        combine Nothing (Just q) = Just (Right q)
+        combine (Just p) (Just q) = Just (Left p)
 
 -- I list out cases explicitly so if I add a new case, I get a compiler warning.
 
