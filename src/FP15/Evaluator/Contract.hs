@@ -54,8 +54,6 @@ validate NumberC (Int i) = Just (IntN i)
 validate NumberC (Real r) = Just (RealN r)
 
 validate (ListC c) (List xs) = validateList c xs
-validate (NonEmptyListC c) (List []) = Nothing
-validate (NonEmptyListC c) (List xs) = validateList c xs
 validate EmptyC (List []) = Just ()
 
 validate (ConsC c cs) (List (x:xs)) =
@@ -71,10 +69,6 @@ validate (Args5C c1 c2 c3 c4 c5) (List [a, b, c, d, e]) =
   liftM5 (,,,,) (validate c1 a) (validate c2 b) (validate c3 c)
                 (validate c4 d) (validate c5 e)
 
-validate (NotC a) x =
-  case validate a x of
-    Nothing -> Just (Never x)
-    Just y -> Nothing
 validate (AndC a b) x = liftM2 (ub Both (,)) (validate a x) (validate b x)
   where ub = (.) (.) (.)
 validate (OrC a b) x = fromMaybes (validate a x) (validate b x)
@@ -82,7 +76,7 @@ validate (OrC a b) x = fromMaybes (validate a x) (validate b x)
         fromMaybes (Just p) Nothing = Just (This p)
         fromMaybes Nothing (Just q) = Just (That q)
         fromMaybes (Just p) (Just q) = Just (These p q)
-validate (XorC a b) x = xorMaybes (validate a x) (validate b x)
+validate (EitherC a b) x = xorMaybes (validate a x) (validate b x)
   where xorMaybes Nothing Nothing = Nothing
         xorMaybes (Just p) Nothing = Just (Left p)
         xorMaybes Nothing (Just q) = Just (Right q)
@@ -100,7 +94,6 @@ validate RealC _ = Nothing
 validate NumberC _ = Nothing
 
 validate (ListC _) _ = Nothing
-validate (NonEmptyListC _) _ = Nothing
 
 validate EmptyC _ = Nothing
 validate (ConsC {}) _ = Nothing

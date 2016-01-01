@@ -46,8 +46,7 @@ instance FPValueConvertible Number where
 -- Wrappers solve the problems of different FP15 types corresponding to same
 -- Haskell type, for example, symbols, strings and lists of characters
 -- are all Haskell 'String's.
--- | Wrapper for the 'NotC' contract.
-newtype Never a = Never { getNever :: FPValue }
+
 -- | Wrapper for the 'StringC' contract.
 newtype Str = Str { getStr :: String } deriving (Eq, Show, Read)
 -- | Wrapper for the 'SymbolC' contract.
@@ -85,12 +84,8 @@ data Contract t where
   StringC :: Contract Str
 
   ListC :: Contract a -> Contract [a] -- ^ Accepts any list.
-  -- TODO maybe use 'Data.List.NonEmpty'?
-  NonEmptyListC :: Contract a -> Contract [a] -- ^ Accepts any non-empty list.
-
-  EmptyC :: Contract ()
   ConsC :: Contract a -> Contract [b] -> Contract (Cons a [b])
-  -- TODO ConsC and NonEmptyListC are the same thing
+  EmptyC :: Contract ()
 
   Args2C :: Contract a -> Contract b -> Contract (a, b)
   Args3C :: Contract a -> Contract b -> Contract c -> Contract (a, b, c)
@@ -99,10 +94,9 @@ data Contract t where
   Args5C :: Contract a -> Contract b -> Contract c -> Contract d -> Contract e
             -> Contract (a, b, c, d, e)
 
-  NotC :: Contract a -> Contract (Never a) -- TODO this isn't needed
   AndC :: Contract a -> Contract b -> Contract (Both a b)
   OrC :: Contract a -> Contract b -> Contract (These a b)
-  XorC :: Contract a -> Contract b -> Contract (Either a b) -- TODO better name
+  EitherC :: Contract a -> Contract b -> Contract (Either a b) -- TODO better name
 
 deriving instance Eq (Contract t)
 deriving instance Show (Contract t)
@@ -171,12 +165,9 @@ instance (ContractConvertible a, ContractConvertible b, ContractConvertible c,
          => ContractConvertible (a, b, c, d, e) where
   asContract = Args5C asContract asContract asContract asContract asContract
 
-instance (ContractConvertible a) => ContractConvertible (Never a) where
-  asContract = NotC asContract
-
 instance (ContractConvertible a, ContractConvertible b)
          => ContractConvertible (Either a b) where
-  asContract = XorC asContract asContract
+  asContract = EitherC asContract asContract
 
 instance (ContractConvertible a, ContractConvertible b)
          => ContractConvertible (These a b) where

@@ -70,7 +70,9 @@ foldN1 :: (Number -> Number -> Number) -> FPFunc
 subLike :: (b -> a -> b) -> Cons b [a] -> b
 
 numListF f x = liftM (toFPValue . f) (ensure (ListC NumberC) x)
-numNEListF f x = liftM (toFPValue . f) (ensure (NonEmptyListC NumberC) x)
+numNEListF f x = (toFPValue . f . consToList) <$> ensure contract x where
+  consToList (Cons (x, xs)) = x : xs
+  contract = ConsC NumberC (ListC NumberC)
 foldN f x0 = numListF (foldl f x0)
 foldN1 f = numNEListF (foldl1 f)
 subLike f (Cons (a, b)) = foldl f a b
