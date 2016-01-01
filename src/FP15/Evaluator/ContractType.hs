@@ -1,10 +1,36 @@
 {-# LANGUAGE Safe, GADTs #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
-module FP15.Evaluator.ContractType  where
+-- |
+-- The 'FP15.Evaluator.ContractType' module contains types and typeclasses
+-- required for handling contracts. Contracts solves the problem of implementing
+-- standard library functions in a dynamic language, where the input types must
+-- be (1) validated and (2) converted to statically-typed values or (3) a helpful
+-- error message is outputted, while (4) making the implementation readable.
+--
+-- The name "contract" is derived from Dr. Racket's contract system.
+--
+-- Using intermediate contract objects, coupled with typeclasses and GADTs, the
+-- concerns of input validation and parsing are pushed behind the scenes.
+-- However, FP15's approach is complex and is not appropriate when you are
+-- writing youself a Scheme in 48 hours.
+--
+-- Interesting enough, in the Aeson library, @FromJSON@ and @ToJSON@ achieve the
+-- same thing for JSON values, except in Aeson's design, there are no
+-- intermediate contract objects. That is because in FP15, contract objects
+-- is required to for detailed diagnostic messages.
+module FP15.Evaluator.ContractType where
 import Data.These(These(..))
 import FP15.Value
 import FP15.Evaluator.FPValue
+
+-- * Helper Types
+-- The helper types are building blocks for describing the input types for
+-- FP15 standard library functions.
+
+-- ** Number Tower
+
+-- TODO refactor to use GADTs for these two types
 
 -- | The 'NumTower' type represents a position on the numerical tower.
 data NumTower = CharT | IntT | RealT deriving (Eq, Ord, Show, Read)
@@ -16,11 +42,13 @@ instance FPValueConvertible Number where
   toFPValue (IntN i) = Int i
   toFPValue (RealN r) = Real r
 
--- * Wrapper Types
-
+-- ** Wrappers
+-- Wrappers solve the problems of different FP15 types corresponding to same
+-- Haskell type, for example, symbols, strings and lists of characters
+-- are all Haskell 'String's.
 -- | Wrapper for the 'NotC' contract.
 newtype Never a = Never { getNever :: FPValue }
--- | Wrapper for the 'StringC' contract
+-- | Wrapper for the 'StringC' contract.
 newtype Str = Str { getStr :: String } deriving (Eq, Show, Read)
 -- | Wrapper for the 'SymbolC' contract.
 newtype Sym = Sym { getSym :: String } deriving (Eq, Show, Read)
@@ -37,33 +65,32 @@ instance FPValueConvertible Sym where
 
 -- * Contract Type
 
--- | The 'Contract' type represents a description of what an FP15 'Value' can
--- be, and the decomposition of it to Haskell type.  A contract of type
--- @'Contract' t@ means all FP15 'Value' that conform to the contract can be
+-- | The 'Contract' type represents a description of what an 'FPValue' can
+-- be, and how it's converted to a Haskell type. A contract of type
+-- @'Contract' t@ means an 'FPValue' that conforms the contract can be
 -- decomposed into a Haskell value of t.
 data Contract t where
-  AnyC :: Contract FPValue
-
-  RealWorldC :: Contract RealWorld
-
-  ValueC :: Contract Value
+  AnyC :: Contract FPValue -- ^ Accepts anything.
+  RealWorldC :: Contract RealWorld -- ^ Accepts only the 'RealWorld'.
+  ValueC :: Contract Value -- ^ Accepts any pure value ('Value'-compatible).
 
   BoolC :: Contract Bool
 
   CharC :: Contract Char
   IntC :: Contract Integer
   RealC :: Contract Double
-  NumberC :: Contract Number
+  NumberC :: Contract Number -- ^ Accepts any numeric type.
 
   SymbolC :: Contract Sym
   StringC :: Contract Str
 
-  ListC :: Contract a -> Contract [a]
+  ListC :: Contract a -> Contract [a] -- ^ Accepts any list.
   -- TODO maybe use 'Data.List.NonEmpty'?
-  NonEmptyListC :: Contract a -> Contract [a]
+  NonEmptyListC :: Contract a -> Contract [a] -- ^ Accepts any non-empty list.
 
   EmptyC :: Contract ()
   ConsC :: Contract a -> Contract [b] -> Contract (Cons a [b])
+  -- TODO ConsC and NonEmptyListC are the same thing
 
   Args2C :: Contract a -> Contract b -> Contract (a, b)
   Args3C :: Contract a -> Contract b -> Contract c -> Contract (a, b, c)
@@ -72,14 +99,19 @@ data Contract t where
   Args5C :: Contract a -> Contract b -> Contract c -> Contract d -> Contract e
             -> Contract (a, b, c, d, e)
 
-  NotC :: Contract a -> Contract (Never a)
+  NotC :: Contract a -> Contract (Never a) -- TODO this isn't needed
   AndC :: Contract a -> Contract b -> Contract (Both a b)
   OrC :: Contract a -> Contract b -> Contract (These a b)
-  XorC :: Contract a -> Contract b -> Contract (Either a b)
+  XorC :: Contract a -> Contract b -> Contract (Either a b) -- TODO better name
 
 deriving instance Eq (Contract t)
 deriving instance Show (Contract t)
+-- TODO Disp instance
 
+-- ^ The 'ContractConvertible' typeclass indicates that a type @t@ has it
+-- corresponding contract value of type @'Contract' t@.
+--
+-- See also: 'FPValueConvertible'.
 class ContractConvertible t where
   asContract :: Contract t
 default (FPValue)

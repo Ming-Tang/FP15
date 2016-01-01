@@ -30,7 +30,7 @@ fromFPValue :: FPValue -> Maybe Value
 fromFPValue = convToValue
 
 instance Disp Extended where
-  disp (Lambda _) = "#<lambda>#"
+  disp (Lambda _) = "#<lambda>"
   disp (Ref _) = "#<ref>"
   disp (RealWorld _) = "#<RealWorld>"
 

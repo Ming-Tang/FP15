@@ -88,7 +88,7 @@ validate (XorC a b) x = xorMaybes (validate a x) (validate b x)
         xorMaybes Nothing (Just q) = Just (Right q)
         xorMaybes (Just p) (Just q) = Nothing
 
--- I list out cases explicitly so if I add a new case, I get a compiler warning
+-- I list out cases explicitly so if I add a new case, I get a compiler warning.
 
 validate BoolC _ = Nothing
 validate SymbolC _ = Nothing
