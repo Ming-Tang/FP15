@@ -4,6 +4,8 @@ import FP15.Types
 import FP15.Compiler.Types
 import qualified Data.Map.Strict as M
 
+-- XXX This looks like I'm exposing an internal module...
+
 empty :: CompiledModuleSet
 empty = CompiledModuleSet M.empty
 

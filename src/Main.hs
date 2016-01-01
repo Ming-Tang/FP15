@@ -18,8 +18,6 @@ import FP15.Evaluator.Contract()
 import FP15.Compiler
 import FP15.Compiler.Types
 import FP15.Compiler.CompiledModuleSet
-import FP15.Compiler.PrettyPrinting()
-import FP15.Compiler.Syntax()
 import FP15.Standard(standardCMS)
 import FP15.Evaluator.Standard(standardEnv)
 import FP15.Evaluator.Translation(transMap)
