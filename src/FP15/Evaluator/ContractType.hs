@@ -69,21 +69,21 @@ instance FPValueConvertible Sym where
 -- @'Contract' t@ means an 'FPValue' that conforms the contract can be
 -- decomposed into a Haskell value of t.
 data Contract t where
-  AnyC :: Contract FPValue -- ^ Accepts anything.
-  RealWorldC :: Contract RealWorld -- ^ Accepts only the 'RealWorld'.
-  ValueC :: Contract Value -- ^ Accepts any pure value ('Value'-compatible).
+  AnyC :: Contract FPValue
+  RealWorldC :: Contract RealWorld
+  ValueC :: Contract Value
 
   BoolC :: Contract Bool
 
   CharC :: Contract Char
   IntC :: Contract Integer
   RealC :: Contract Double
-  NumberC :: Contract Number -- ^ Accepts any numeric type.
+  NumberC :: Contract Number
 
   SymbolC :: Contract Sym
   StringC :: Contract Str
 
-  ListC :: Contract a -> Contract [a] -- ^ Accepts any list.
+  ListC :: Contract a -> Contract [a]
   ConsC :: Contract a -> Contract [b] -> Contract (Cons a [b])
   EmptyC :: Contract ()
 
