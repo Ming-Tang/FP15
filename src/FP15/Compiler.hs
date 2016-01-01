@@ -50,10 +50,10 @@ stageModule cms mast@ModuleAST { astMN, astFs, astFls
 
 addImplicitPrelude :: ImportList -> ImportList
 addImplicitPrelude = ([Loc Nothing (mkImport $ M ["Std"]),
-                       Loc Nothing (Import { impModule = M ["Std"]
-                                           , impQual = Qual
-                                           , impRename = Just $ ModRename $ M ["$"]
-                                           , impFilters = Nothing })] ++)
+                       Loc Nothing Import { impModule = M ["Std"]
+                                          , impQual = Qual
+                                          , impRename = Just $ ModRename $ M ["$"]
+                                          , impFilters = Nothing }] ++)
 --addImplicitPrelude = ([Loc Nothing (mkImport $ M ["Std"])] ++)
 
 getSourceMapping :: ModuleAST -> SourceMapping
