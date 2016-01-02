@@ -66,6 +66,7 @@ $neg = \~
 tokens :-
   $white+ { whitespaces }
   "--" .*  ;
+
   @string { act readString }
   @operator { act readOperator }
   @dot_operator { act readDotOperator }
@@ -73,24 +74,28 @@ tokens :-
   @module_part? @function_part { act readFunction }
   @number { act readNumber }
   @char { act readChar }
-  \#\= { act $ const $ return With }
+
+  \#\= { single With }
+  \#\: { single Let }
   @get { act readGet }
-  \#\: { act $ const $ return Let }
+
   @hash { act readHash }
+
   \[ { push Bracket LBracket }
   \] { pop Bracket RBracket }
   \{ { push Brace LBrace }
   \} { pop Brace RBrace }
   \( { push Paren LParen }
   \) { pop Paren RParen }
+
   -- TODO eliminate them in favor of ternary operators
-  \| { act $ const $ return Pipe }
-  \: { act $ const $ return Colon }
-  \, { act $ const $ return Comma }
-  \; { act $ const $ return Semicolon }
-  \$ { act $ const $ return Dollar }
-  \' { act $ const $ return Quote }
-  . { act $ const $ return $ Illegal "Unexpected character." }
+  \| { single Pipe }
+  \: { single Colon }
+  \, { single Comma }
+  \; { single Semicolon }
+  \$ { single Dollar }
+  \' { single Quote }
+  . { single $ Illegal "Unexpected character." }
 
 {
 
@@ -165,8 +170,7 @@ alexEOF = do
             [] -> return $ [Token EOF (SrcPos 0 0 0 Nothing) ""]
             _ -> alexError $ "Unclosed parens: " ++ intercalate " " closings
 
-push, pop :: StateTag -> TokenData
-             -> (AlexPosn, Char, [Byte], String) -> Int -> Alex [Token]
+push, pop :: StateTag -> TokenData -> AlexAction [Token]
 push s f input@(!(AlexPn _ _ col, _, _, _)) !n = do
   ss <- getStateStack
   ts <- act (return . const f) input n
@@ -186,16 +190,15 @@ pop s f !input !n = do
       else
         alexError "Closing token mismatch."
 
-getTokenInfo :: (AlexPosn, Char, [Byte], String) -> Int -> Alex (SrcPos, String)
+getTokenInfo :: AlexAction (SrcPos, String)
 getTokenInfo !(AlexPn p l c, _, _, str) !n = do
   let tokStr = take n str
   return (SrcPos p l c Nothing, tokStr)
 
--- | Create an @AlexAction@ from a function that takes a string and returns a
--- token or error message as a result, and if a token was returned, indentation
--- will be committed before returning the token.
-act :: (String -> Either String TokenData)
-       -> (AlexPosn, Char, [Byte], String) -> Int -> Alex [Token]
+-- | The 'act' function creates an @AlexAction@ from a function that takes a
+-- string and returns a token or error message as a result, and if a token was
+-- returned, indentation will be committed before returning the token.
+act :: (String -> Either String TokenData) -> AlexAction [Token]
 act f !input !n = do
   indentTs <- commitIndentChange
   (pos, tokStr) <- getTokenInfo input n
@@ -204,7 +207,12 @@ act f !input !n = do
     Left e -> alexError e
     Right t -> return $ indentTs' ++ [Token t pos tokStr]
 
-whitespaces :: (AlexPosn, Char, [Byte], String) -> Int -> Alex [Token]
+-- | The 'single' function creates an @AlexAction@ that returns a specified
+-- token.
+single :: TokenData -> AlexAction [Token]
+single = act . const . return
+
+whitespaces :: AlexAction [Token]
 whitespaces !input !n = do
   (_, tokStr) <- getTokenInfo input n
   let ic = getIndentChange tokStr
@@ -213,7 +221,9 @@ whitespaces !input !n = do
   setPendingIndent $ ic `mplus` p
   skip input n
 
-scanTokensWithFile :: (Maybe String) -> String -> Either String [Token]
+-- | The 'scanTokensWithFile' function is like 'scanTokens' except a filename
+-- is provided for locating the tokens.
+scanTokensWithFile :: Maybe String -> String -> Either String [Token]
 scanTokensWithFile f str = runAlex str loop where
   loop = do
     setCurrentFile f
@@ -225,6 +235,8 @@ scanTokensWithFile f str = runAlex str loop where
   isEOF (Token EOF _ _) = True
   isEOF _ = False
 
+-- | The 'scanTokens' function splits a FP15 source code into a list of tokens,
+-- or an error message if tokenization fails.
 scanTokens :: String -> Either String [Token]
 scanTokens str = scanTokensWithFile Nothing str
 
