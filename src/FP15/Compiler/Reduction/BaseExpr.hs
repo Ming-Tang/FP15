@@ -24,12 +24,12 @@ toBaseExpr :: T.Expr -> Either BaseExprError BaseExpr
 toBaseExpr (T.Ex _) = error "Ex"
 toBaseExpr (T.Const c) = return $ E.Const c
 toBaseExpr (T.Func lf) = return $ E.Func $ fmap disp lf
-toBaseExpr (T.With e) = E.With <$> toBaseExpr e
+toBaseExpr (T.With e) = E.With idF <$> toBaseExpr e
 toBaseExpr (T.Get i) = return $ E.Get i
 
 toBaseExpr (ta -> Just ("BaseF", [f])) = Left BaseF
 toBaseExpr (ta -> Just ("If", [p, a])) =
-  If <$> p <*> a <*> pure (E.Func $ noLoc "Std._")
+  If <$> p <*> a <*> pure idF
 toBaseExpr (ta -> Just ("If", [p, a, b])) = If <$> p <*> a <*> b
 toBaseExpr (ta -> Just ("Compose", xs)) = Compose <$> sequence xs
 toBaseExpr (ta -> Just ("Fork", xs)) = Fork <$> sequence xs
@@ -42,6 +42,9 @@ toBaseExpr (T.App f@(Loc _ nf) (length -> n)) =
     Left (InvalidFlArity f n)
   else
     Left (InvalidFl f)
+
+idF :: BaseExpr
+idF = E.Func $ noLoc "Std._"
 
 ta :: T.Expr -> Maybe (String, [Either BaseExprError BaseExpr])
 ta (T.App (Loc _ (N ["Std"] n)) (map toBaseExpr -> xs)) = Just (n, xs)

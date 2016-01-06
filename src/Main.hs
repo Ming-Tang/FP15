@@ -47,6 +47,7 @@ main = getContents >>= compile
 -}
 
 main = do
+  -- XXX should break the whole compilation procedure down into subroutines
   src <- getContents
   let ast = unwrap $ parse $ ModuleSource Nothing src
   let m = unwrap $ stageModule standardCMS ast
