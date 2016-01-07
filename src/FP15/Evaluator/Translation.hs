@@ -69,12 +69,15 @@ trans e (Get i) = body where
   body !(force -> x) = do
     env <- getEnv
     case getCtx i env of
-      Nothing -> error "Access violation"
+      Nothing -> raiseEnvAccessError i
       Just v -> return v
 
-trans e (With e1) = body where
-  inner = force $ trans e e1
-  body !(force -> x) = withEnv (push x) $ inner x
+trans e (With f e1) = body where
+  f' = force $ trans e f
+  e1' = force $ trans e e1
+  body !(force -> x) = do
+    y <- f' x
+    withEnv (push y) $ e1' x
 
 trans e (Mark k x) = markFunc (noLoc k) . trans e x
 

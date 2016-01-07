@@ -31,7 +31,7 @@ resolve (Const x) = return $ Const x
 resolve (App f xs) = App <$> loFl f <*> mapM resolve xs
 resolve (Func f) = Func <$> loF f
 resolve (Get i) = return $ Get i -- TODO validate?
-resolve (With e) = With <$> resolve e
+resolve (With x e) = With <$> resolve x <*> resolve e
 resolve (Ex _) = error "resolve: Ex"
 
 -- TODO this need to be rewritten when we have EnvName phase in the future

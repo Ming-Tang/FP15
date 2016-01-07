@@ -32,7 +32,7 @@ data BaseExpr = Const Value
               | While BaseExpr BaseExpr
               | Mark Ident BaseExpr
               | Get Int
-              | With BaseExpr
+              | With BaseExpr BaseExpr
               deriving (Eq, Show, Read, Generic)
 
 instance NFData BaseExpr

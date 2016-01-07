@@ -111,6 +111,11 @@ convExprAST env ast = runReaderT (toBE =<< doSmartSplit ast) env
 lrn :: Located (RName f) -> Located (UnName f)
 lrn (Loc l f) = Loc l $ RN f
 
+mkWith :: LookupOp e => String -> String -> ExprAST -> BResult e BExpr
+mkWith sa sb x = do
+  x' <- toBE x
+  return $ With (baseF sa) (baseF sb |> x')
+
 toBE :: LookupOp e => ExprAST -> BResult e BExpr
 toBE TId = return pId
 toBE (TValue v) = return $ Const v
@@ -120,14 +125,17 @@ toBE (TOperator lo@(Loc l o)) = do
   return $ Func $ Loc l $ AN f
 toBE (TDotOperator f) = return $ Func $ lrn f
 
-toBE (TWith e) = With <$> toBE e
+toBE (TWith e) = With pId <$> toBE e
+toBE (TWithLeft e) = mkWith "s0" "s1" e
+toBE (TWithRight e) = mkWith "s1" "s0" e
+
 -- TODO actually validate index with Reader monad
 toBE (TGet i) = return $ Get i
 
 toBE (TApp fl es) = App (lrn fl) <$> mapM toBE es
 toBE (TIndex i) =
   return (baseA "Fork" [ pId, Const $ Int $ fromIntegral i]
-          |> (Func $ synNameL "index"))
+          |> baseF "index")
 
 toBE (TIf p a b) = base "If" <*> mapM toBE [p, a, b]
 toBE (TFork es) = base "Fork" <*> mapM toBE es
@@ -323,14 +331,17 @@ lookupOpOnly o = do
 
 -- * Primitive Symbols
 
+synNameL :: String -> LocUnName f
+synNameL = Loc Nothing . SN
+
 base :: Monad m => String -> m ([BExpr] -> BExpr)
 base = return . App . synNameL
 
 baseA :: String -> [BExpr] -> BExpr
 baseA = App . synNameL
 
-synNameL :: String -> LocUnName f
-synNameL = Loc Nothing . SN
+baseF :: String -> BExpr
+baseF = Func . synNameL
 
 pId :: BExpr
 pId = Func $ synNameL "_"

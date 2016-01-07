@@ -131,8 +131,14 @@ index (xs, i) = case res of
 
 -- ** I/O
 
-ioFunc' :: FPValueConvertible b => Contract a -> (a -> IO b) -> FPFunc
-ioFunc :: (ContractConvertible a, FPValueConvertible b) => (a -> IO b) -> FPFunc
+ioFunc' :: FPValueConvertible r => Contract a -> (a -> IO r) -> FPFunc
+ioFunc :: (ContractConvertible a, FPValueConvertible r) => (a -> IO r) -> FPFunc
+
+ioFunc'0 :: ContractConvertible a => (a -> IO r) -> FPFunc
+ioFunc'1 :: (ContractConvertible a, FPValueConvertible r) => (a -> IO r) -> FPFunc
+ioFunc1'0 :: ContractConvertible a => (a -> IO r) -> FPFunc
+ioFunc0'1 ::  FPValueConvertible t => IO t -> FPFunc
+ioFunc1'1 :: (ContractConvertible a, FPValueConvertible r) => (a -> IO r) -> FPFunc
 
 ioFunc' c f x = do
   z <- ensure c x
@@ -239,6 +245,8 @@ standardEnv' = M.fromList [
   , ("isCons", checkFunc $ ConsC AnyC listAnyC)
 
   -- List Processing
+  , ("s0", func (\x -> head (x :: [FPValue])))
+  , ("s1", func (\x -> (x :: [FPValue]) !! 1))
   , ("sort", func (sort :: [Value] -> [Value]))
   , ("distl", func distl)
   , ("distr", func distr)

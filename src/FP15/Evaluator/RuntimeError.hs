@@ -26,7 +26,8 @@ data RuntimeError = ContractViolation { contractViolated :: String
                                       , stackTrace :: StackTrace }
                   | ErrorMessage { messageText :: String
                                  , stackTrace :: StackTrace }
-                  | EnvAccessError { offendingIndex :: Int }
+                  | EnvAccessError { offendingIndex :: Int
+                                   , stackTrace :: StackTrace }
 
 instance Error RuntimeError where
   strMsg s = ErrorMessage s emptyStackTrace
@@ -55,8 +56,9 @@ instance Disp RuntimeError where
   pretty (ErrorMessage s st) =
     joinLines [text "Error:" <+> text s, text (show st)]
 
-  pretty (EnvAccessError i) =
-    text "Env access error: " <+> text (show i)
+  pretty (EnvAccessError i st) =
+    joinLines [text "Env access error: " <+> text (show i),
+               text (show st)]
 
 joinLines :: [Doc] -> Doc
 joinLines = vcat

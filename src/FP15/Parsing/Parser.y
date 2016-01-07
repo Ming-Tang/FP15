@@ -9,7 +9,7 @@ import Data.Maybe
 import Data.List.Split
 import FP15.Parsing.Types
 import FP15.Parsing.Lexer
-import FP15.Types hiding (Get, With)
+import FP15.Types hiding (Get, With, WithLeft, WithRight)
 import FP15.Value
 }
 
@@ -33,6 +33,8 @@ eof { Token EOF _ _ }
 "#" { Token Hash _ _ }
 "#:" { Token Let _ _ }
 "#=" { Token With _ _ }
+"#<" { Token WithLeft _ _ }
+"#>" { Token WithRight _ _ }
 "=" { (viewOperatorS "=" -> Just $$) }
 
 get { Token (Get $$) _ _ }
@@ -107,6 +109,8 @@ primary : function { TFunc $1 }
         | indexer { TIndex $1 }
         | get { TGet $1 }
         | "#=" primary { TWith $2 }
+        | "#<" primary { TWithLeft $2 }
+        | "#>" primary { TWithRight $2 }
 
         | "#:" "[" binding_list "]" primary { TLet $3 $5 }
         | "(" f_infix_body ")" { parseFInfix $2 }
