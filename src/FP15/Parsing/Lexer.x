@@ -1,12 +1,11 @@
 {
 {-# LANGUAGE Trustworthy #-}
-{-# OPTIONS_GHC -funbox-strict-fields #-}
+{-# OPTIONS_GHC -funbox-strict-fields -fno-warn-missing-signatures -fno-warn-unused-imports #-}
 
 module FP15.Parsing.Lexer (
   scanTokens, scanTokensWithFile
 ) where
 import Data.List(intercalate)
-import Control.Applicative(Applicative(..))
 import Control.Monad(liftM, liftM2, mplus)
 import FP15.Types(SrcPos(..))
 import FP15.Parsing.Types

@@ -120,9 +120,9 @@ toBE (TOperator lo@(Loc l o)) = do
   return $ Func $ Loc l $ AN f
 toBE (TDotOperator f) = return $ Func $ lrn f
 
-toBE (TWith e) = With <$> toBE e
-toBE (TWithLeft e) = WithLeft <$> toBE e
-toBE (TWithRight e) = WithRight <$> toBE e
+toBE (TWith e) = With pId <$> toBE e
+toBE (TWithLeft e) = With (baseF "s0") <$> toBE e
+toBE (TWithRight e) = With (baseF "s1") <$> toBE e
 
 -- TODO actually validate index with Reader monad
 toBE (TGet i) = return $ Get i
@@ -130,7 +130,7 @@ toBE (TGet i) = return $ Get i
 toBE (TApp fl es) = App (lrn fl) <$> mapM toBE es
 toBE (TIndex i) =
   return (baseA "Fork" [ pId, Const $ Int $ fromIntegral i]
-          |> (Func $ synNameL "index"))
+          |> baseF "index")
 
 toBE (TIf p a b) = base "If" <*> mapM toBE [p, a, b]
 toBE (TFork es) = base "Fork" <*> mapM toBE es
@@ -326,14 +326,17 @@ lookupOpOnly o = do
 
 -- * Primitive Symbols
 
+synNameL :: String -> LocUnName f
+synNameL = Loc Nothing . SN
+
 base :: Monad m => String -> m ([BExpr] -> BExpr)
 base = return . App . synNameL
 
 baseA :: String -> [BExpr] -> BExpr
 baseA = App . synNameL
 
-synNameL :: String -> LocUnName f
-synNameL = Loc Nothing . SN
+baseF :: String -> BExpr
+baseF = Func . synNameL
 
 pId :: BExpr
 pId = Func $ synNameL "_"

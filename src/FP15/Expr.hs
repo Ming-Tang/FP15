@@ -17,9 +17,7 @@ data XExpr f fl x = Const Value
                   | App fl [XExpr f fl x]
                   | Func f
                   | Get Int
-                  | With (XExpr f fl x)
-                  | WithLeft (XExpr f fl x)
-                  | WithRight (XExpr f fl x)
+                  | With (XExpr f fl x) (XExpr f fl x)
                   | Ex !x
 
 deriving instance (Eq x, Eq f, Eq fl) => Eq (XExpr f fl x)
@@ -43,9 +41,7 @@ instance (Disp f, Disp fl, Disp x) => Disp (XExpr f fl x) where
   pretty (App f xs) = prettyApp (pretty f) $ map pretty xs
   pretty (Func f) = pretty f
   pretty (Get i) = pretty (TGet i)
-  pretty (With e) = text "#=" <+> pretty e
-  pretty (WithLeft e) = text "#<" <+> pretty e
-  pretty (WithRight e) = text "#>" <+> pretty e
+  pretty (With x e) = text "#<with>" <> lbrace <> pretty x <> rbrace <+> pretty e
   pretty (Ex x) = pretty x
 
 -- | An FP15 expression with the specified name type.
