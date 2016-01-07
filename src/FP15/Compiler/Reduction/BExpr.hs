@@ -111,6 +111,11 @@ convExprAST env ast = runReaderT (toBE =<< doSmartSplit ast) env
 lrn :: Located (RName f) -> Located (UnName f)
 lrn (Loc l f) = Loc l $ RN f
 
+mkWith :: LookupOp e => String -> String -> ExprAST -> BResult e BExpr
+mkWith sa sb x = do
+  x' <- toBE x
+  return $ With (baseF sa) (baseF sb |> x')
+
 toBE :: LookupOp e => ExprAST -> BResult e BExpr
 toBE TId = return pId
 toBE (TValue v) = return $ Const v
@@ -121,8 +126,8 @@ toBE (TOperator lo@(Loc l o)) = do
 toBE (TDotOperator f) = return $ Func $ lrn f
 
 toBE (TWith e) = With pId <$> toBE e
-toBE (TWithLeft e) = With (baseF "s0") <$> toBE e
-toBE (TWithRight e) = With (baseF "s1") <$> toBE e
+toBE (TWithLeft e) = mkWith "s0" "s1" e
+toBE (TWithRight e) = mkWith "s1" "s0" e
 
 -- TODO actually validate index with Reader monad
 toBE (TGet i) = return $ Get i
