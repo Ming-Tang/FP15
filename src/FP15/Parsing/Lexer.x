@@ -76,6 +76,8 @@ tokens :-
   @char { act readChar }
 
   \#\= { single With }
+  \#\< { single WithLeft }
+  \#\> { single WithRight }
   \#\: { single Let }
   @get { act readGet }
 

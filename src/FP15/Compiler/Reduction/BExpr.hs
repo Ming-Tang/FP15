@@ -121,6 +121,9 @@ toBE (TOperator lo@(Loc l o)) = do
 toBE (TDotOperator f) = return $ Func $ lrn f
 
 toBE (TWith e) = With <$> toBE e
+toBE (TWithLeft e) = WithLeft <$> toBE e
+toBE (TWithRight e) = WithRight <$> toBE e
+
 -- TODO actually validate index with Reader monad
 toBE (TGet i) = return $ Get i
 

@@ -18,6 +18,8 @@ data XExpr f fl x = Const Value
                   | Func f
                   | Get Int
                   | With (XExpr f fl x)
+                  | WithLeft (XExpr f fl x)
+                  | WithRight (XExpr f fl x)
                   | Ex !x
 
 deriving instance (Eq x, Eq f, Eq fl) => Eq (XExpr f fl x)
@@ -42,6 +44,8 @@ instance (Disp f, Disp fl, Disp x) => Disp (XExpr f fl x) where
   pretty (Func f) = pretty f
   pretty (Get i) = pretty (TGet i)
   pretty (With e) = text "#=" <+> pretty e
+  pretty (WithLeft e) = text "#<" <+> pretty e
+  pretty (WithRight e) = text "#>" <+> pretty e
   pretty (Ex x) = pretty x
 
 -- | An FP15 expression with the specified name type.
@@ -57,6 +61,8 @@ data ExprAST = TValue Value
              | TId
 
              | TWith ExprAST
+             | TWithLeft ExprAST
+             | TWithRight ExprAST
              | TGet !Int
 
              | TIf ExprAST ExprAST ExprAST
@@ -86,6 +92,9 @@ instance Disp ExprAST where
   pretty TId = text "_"
 
   pretty (TWith e) = text "#=" <+> lbrace <> pretty e <> rbrace
+  pretty (TWithLeft e) = text "#<" <+> lbrace <> pretty e <> rbrace
+  pretty (TWithRight e) = text "#>" <+> lbrace <> pretty e <> rbrace
+
   pretty (TGet 0) = text "#^"
   pretty (TGet 1) = text "#^^"
   pretty (TGet 2) = text "#^^^"

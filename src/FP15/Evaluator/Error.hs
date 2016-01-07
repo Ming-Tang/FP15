@@ -15,16 +15,19 @@ runtimeError e = throwError $ e emptyStackTrace
 raiseContractViolation :: MonadError RuntimeError m => Contract b -> FPValue -> m a
 raisePassMismatchError :: MonadError RuntimeError m => Int -> Int -> m a
 raiseErrorMessage :: MonadError RuntimeError m => String -> m a
+raiseEnvAccessError :: MonadError RuntimeError m => Int -> m a
 
 raiseContractViolation c v = runtimeError $ ContractViolation (show c) (disp v)
 raisePassMismatchError m n = runtimeError $ PassMismatchError m n
 raiseErrorMessage = runtimeError . ErrorMessage
+raiseEnvAccessError = runtimeError . EnvAccessError
 
 pushStackTrace s (ContractViolation c v (StackTrace st)) =
   ContractViolation c v $ StackTrace (s:st)
 pushStackTrace s (PassMismatchError m n (StackTrace st)) =
   PassMismatchError m n $ StackTrace (s:st)
 pushStackTrace s (ErrorMessage m (StackTrace st)) = ErrorMessage m $ StackTrace st
+pushStackTrace s (EnvAccessError e (StackTrace st)) = ErrorMessage "EnvAccessError" $ StackTrace st
 
 markStackFrame s = (`catchError` rethrowWithExtendedStackTrace)
   where rethrowWithExtendedStackTrace = throwError . pushStackTrace s

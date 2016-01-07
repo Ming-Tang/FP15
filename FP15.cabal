@@ -54,6 +54,9 @@ executable FP15
 
   default-extensions:  BangPatterns ViewPatterns NamedFieldPuns
 
+  ghc-options: -Wall -fno-warn-unused-binds -fno-warn-unused-matches
+               -fno-warn-name-shadowing
+
   -- Modules included in this executable, other than Main.
   -- other-modules:
 

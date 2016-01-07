@@ -69,7 +69,7 @@ trans e (Get i) = body where
   body !(force -> x) = do
     env <- getEnv
     case getCtx i env of
-      Nothing -> error "Access violation"
+      Nothing -> raiseEnvAccessError i
       Just v -> return v
 
 trans e (With f e1) = body where

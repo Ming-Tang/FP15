@@ -32,6 +32,8 @@ resolve (App f xs) = App <$> loFl f <*> mapM resolve xs
 resolve (Func f) = Func <$> loF f
 resolve (Get i) = return $ Get i -- TODO validate?
 resolve (With e) = With <$> resolve e
+resolve (WithLeft e) = WithLeft <$> resolve e
+resolve (WithRight e) = WithRight <$> resolve e
 resolve (Ex _) = error "resolve: Ex"
 
 -- TODO this need to be rewritten when we have EnvName phase in the future

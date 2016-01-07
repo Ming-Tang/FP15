@@ -41,6 +41,8 @@ data TokenData
   | Let      -- #:
   | With     -- #=
   | Get !Int -- #^ #^^ #^4
+  | WithLeft -- #<
+  | WithRight -- #>
   | Hash
   deriving (Eq, Ord, Show, Read)
 
