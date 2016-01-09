@@ -4,6 +4,7 @@ import os.path as path
 import readline
 import subprocess as sp
 import atexit
+from fp15 import run_fp15
 
 histfile = path.join(path.expanduser("~"), ".fp15-hist")
 
@@ -15,9 +16,6 @@ except IOError:
 atexit.register(readline.write_history_file, histfile)
 del histfile
 
-proc = path.join(path.dirname(path.realpath(__file__)),
-                 path.expanduser('./dist/build/FP15/FP15'))
-fp15 = None
 defs = []
 
 def parse_cmd(l):
@@ -47,14 +45,10 @@ while True:
             except IndexError:
                 pass
         else:
-            fp15 = sp.Popen([proc], stdin=sp.PIPE)
-            fp15.communicate("\n".join(defs + ["main = " + code]))
-            fp15 = None
+            run_fp15("\n".join(defs + ["main = " + code]))
     except EOFError:
         print("")
         break
     except KeyboardInterrupt:
         print("<Interrupt>")
-        if fp15 is not None:
-            fp15.terminate()
 
