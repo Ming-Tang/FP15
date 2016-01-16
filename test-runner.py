@@ -3,6 +3,8 @@ import os
 import os.path as path
 from fp15 import run_fp15
 
+# TODO integrate with REPL, refactor REPL into a class
+
 def parse_test_case(contents):
     code, out = [], []
     state = 0
