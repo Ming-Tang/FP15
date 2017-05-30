@@ -54,9 +54,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.provision "shell", inline: <<-EOF
-    yum install -y curl vim git python
-    curl https://copr.fedoraproject.org/coprs/petersen/ghc-7.10.1/repo/fedora-22/petersen-ghc-7.10.1-fedora-22.repo \
-      -s --output /etc/yum.repos.d/peterson-ghc-7.10.1.repo
+    #yum install -y vim curl git python
+    #curl https://copr.fedoraproject.org/coprs/petersen/ghc-7.10.1/repo/fedora-22/petersen-ghc-7.10.1-fedora-22.repo \
+    #  -s --output /etc/yum.repos.d/peterson-ghc-7.10.1.repo
     yes | yum install -y ghc cabal-install
   EOF
 

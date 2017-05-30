@@ -1,4 +1,4 @@
-{-# LANGUAGE Safe, GADTs #-}
+{-# LANGUAGE Trustworthy, GADTs #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 -- |

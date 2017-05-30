@@ -1,4 +1,4 @@
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE DeriveGeneric #-}
 module FP15.Evaluator.Types (
   module FP15.Evaluator.Types
@@ -35,7 +35,7 @@ data BaseExpr = Const Value
               | With BaseExpr BaseExpr
               deriving (Eq, Show, Read, Generic)
 
-instance NFData BaseExpr
+instance NFData BaseExpr where rnf x = seq x ()
 type FPResult = FP FPValue
 
 -- | An FP15 function, which takes a 'Value' and returns a 'Value' or a

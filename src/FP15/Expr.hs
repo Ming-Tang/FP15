@@ -26,7 +26,7 @@ deriving instance (Show x, Show f, Show fl) => Show (XExpr f fl x)
 deriving instance (Read x, Read f, Read fl) => Read (XExpr f fl x)
 deriving instance (Generic x, Generic f, Generic fl) => Generic (XExpr f fl x)
 deriving instance Functor (XExpr f fl)
-instance (NFData x, NFData f, NFData fl) => NFData (XExpr f fl x) where
+instance (NFData x, NFData f, NFData fl) => NFData (XExpr f fl x) where rnf x = seq x ()
 
 instance Xtn (XExpr f fl) where
   maybeX (Ex x) = Just x

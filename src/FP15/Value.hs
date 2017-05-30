@@ -37,7 +37,7 @@ instance Xtn XValue where
 type Value = XValue Void
 
 instance NFData x => NFData (XValue x)
-instance NFData Value
+instance NFData Value where rnf x = seq x ()
 
 convXValue f = conv where
   conv (Bool b) = Bool b

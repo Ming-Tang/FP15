@@ -95,7 +95,7 @@ data ReducingTag
   | Finished             -- ^ Module has finished reducing.
                  deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData ReducingTag
+instance NFData ReducingTag where rnf x = seq x ()
 
 data ReducingModuleState
   = ReducingModuleState { rmsSS :: StaticState
@@ -103,7 +103,7 @@ data ReducingModuleState
                         , rmsRM :: ReducingModule }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData ReducingModuleState where
+instance NFData ReducingModuleState where rnf x = seq x ()
 
 -- | An 'ExprState' represents an expression in various stages of the reduction
 -- stage.
@@ -121,7 +121,7 @@ newtype CompiledModule
   = Compiled (ModuleBody Id Expr FunctionalDefinition FFixity FlFixity)
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData CompiledModule where
+instance NFData CompiledModule where rnf x = seq x ()
 
 data CompiledModuleItem
   = CompiledModuleItem { cmiCM :: CompiledModule
@@ -129,7 +129,7 @@ data CompiledModuleItem
                        , cmiSM :: Maybe SourceMapping }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData CompiledModuleItem where
+instance NFData CompiledModuleItem where rnf x = seq x ()
 
 -- | A 'CompiledModuleSet' represents a set of compiled modules with module
 -- interface and source mapping (optional) as additional information.
@@ -137,7 +137,7 @@ newtype CompiledModuleSet
   = CompiledModuleSet (Map ModuleName CompiledModuleItem)
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData CompiledModuleSet where
+instance NFData CompiledModuleSet where rnf x = seq x ()
 
 getCompiledModule
   :: CompiledModule -> ModuleBody Id Expr FunctionalDefinition FFixity FlFixity

@@ -1,4 +1,4 @@
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-}
 module FP15.Types (
   module FP15.Xtn
 , module FP15.Disp

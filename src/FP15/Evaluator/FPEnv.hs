@@ -5,7 +5,7 @@ import Control.DeepSeq
 
 newtype FPEnv v = FPEnv { getFPEnv :: [v] } deriving (Generic)
 
-instance NFData (FPEnv v) where
+instance NFData (FPEnv v) where rnf x = seq x ()
 
 initial :: FPEnv v
 initial = FPEnv []

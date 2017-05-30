@@ -20,11 +20,11 @@ data Extended = Lambda !(FPValue -> FPValue)
               | RealWorld !RealWorld
               deriving (Generic)
 
-instance NFData Extended
+instance NFData Extended where rnf x = seq x ()
 
 data RealWorld = RW deriving (Eq, Show, Read, Ord, Generic)
 
-instance NFData RealWorld
+instance NFData RealWorld where rnf x = seq x ()
 
 fromFPValue :: FPValue -> Maybe Value
 fromFPValue = convToValue
@@ -40,6 +40,14 @@ instance Disp FPValue where
 class FPValueConvertible t where
   toFPValue :: t -> FPValue
 default (FPValue)
+
+instance Num FPValue where
+  (+) _ _ = undefined
+  (*) _ _ = undefined
+  abs _ = undefined
+  signum _ = undefined
+  fromInteger _ = undefined
+  negate _ = undefined
 
 instance FPValueConvertible RealWorld where
   toFPValue = Extended . RealWorld

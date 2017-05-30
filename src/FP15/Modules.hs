@@ -20,13 +20,13 @@ data ModuleSource = ModuleSource { moduleFile :: !(Maybe String)
                                  , moduleSource :: !String }
                   deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData ModuleSource where
+instance NFData ModuleSource where rnf x = seq x ()
 
 data ModuleResolutionError = ModuleNotFound
                            | ParseError String
                            deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData ModuleResolutionError where
+instance NFData ModuleResolutionError where rnf x = seq x ()
 
 -- * Custom Operators
 
@@ -37,13 +37,13 @@ type Prec = (Int, Int)
 data OperatorType = Prefix | LeftAssoc | RightAssoc | VarAssoc
                   deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData OperatorType where
+instance NFData OperatorType where rnf x = seq x ()
 
 -- | Fixity declaration.
 data Fixity a = Fixity OperatorType Prec (Name (a, Abs))
               deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData (Fixity a) where
+instance NFData (Fixity a) where rnf x = seq x ()
 
 type LocFixity a = Located (Fixity a)
 
@@ -55,7 +55,7 @@ type FunctionalDefinition = ()
 data MIRef f fl op = MIF f | MIFl fl | MIOp op
                    deriving (Eq, Ord, Show, Read, Generic)
 
-instance (NFData f, NFData fl, NFData op) => NFData (MIRef f fl op) where
+instance (NFData f, NFData fl, NFData op) => NFData (MIRef f fl op) where rnf x = seq x ()
 
 -- | A selective import.
 type SelImp = MIRef (Id F) (Id Fl) (Id Unknown)
@@ -63,7 +63,7 @@ type SelImp = MIRef (Id F) (Id Fl) (Id Unknown)
 newtype ModRename = ModRename ModuleName
                   deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData ModRename where
+instance NFData ModRename where rnf x = seq x ()
 
 instance Disp ModRename where
   pretty (ModRename m) = pretty m <+> text "=" <> space
@@ -71,7 +71,7 @@ instance Disp ModRename where
 data ImpQual = Unqual | Qual
                deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData ImpQual where
+instance NFData ImpQual where rnf x = seq x ()
 
 instance Disp ImpQual where
   pretty Unqual = text ""
@@ -81,7 +81,7 @@ instance Disp ImpQual where
 data ImpFilters = Selective ![SelImp] | Hiding ![SelImp]
             deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData ImpFilters where
+instance NFData ImpFilters where rnf x = seq x ()
 
 instance Disp ImpFilters where
   pretty (Selective _) = text "(...)"
@@ -116,7 +116,7 @@ instance Disp Import where
 
 -- +Module-(a)        import Module hiding (a)
 
-instance NFData Import where
+instance NFData Import where rnf x = seq x ()
 
 type ImportList = [Located Import]
 
@@ -134,5 +134,5 @@ data ModuleAST = ModuleAST { astMN :: !ModuleName
                            }
                deriving (Eq, Ord, Show, Read, Generic)
 
-instance NFData ModuleAST where
+instance NFData ModuleAST where rnf x = seq x ()
 
