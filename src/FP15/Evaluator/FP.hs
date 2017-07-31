@@ -4,11 +4,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
 module FP15.Evaluator.FP (
-  module FP15.Evaluator.FP, module Control.Monad.RWS.Strict, module Control.Monad.Error
+  module FP15.Evaluator.FP, module Control.Monad.RWS.Strict, module Control.Monad.Except
 ) where
 import Control.Applicative
 import Control.Monad.RWS.Strict
-import Control.Monad.Error
+import Control.Monad.Except
 import FP15.Evaluator.FPEnv(FPEnv(..), initial)
 import FP15.Evaluator.RuntimeError
 import FP15.Evaluator.FPValue
@@ -32,7 +32,7 @@ initS = ()
 -- Since 'ErrorT' is the outermost monad transformer in the transformer stack,
 -- the context is available even if an error has occurred. See the signature of
 -- 'runFP' for more details.
-newtype FP a = FP { unFP :: ErrorT RuntimeError (RWST R W S IO) a }
+newtype FP a = FP { unFP :: ExceptT RuntimeError (RWST R W S IO) a }
 
 deriving instance MonadIO FP
 deriving instance MonadFix FP
@@ -54,7 +54,7 @@ instance Functor FP where
   fmap f (FP x) = FP $ fmap f x
 
 runFP :: R -> S -> FP a -> IO (Either RuntimeError a, W, S)
-runFP r s = flip (`runRWST` r) s . runErrorT . unFP
+runFP r s = flip (`runRWST` r) s . runExceptT . unFP
 
 execFP :: FP a -> IO (Either RuntimeError a)
 execFP fp = (\(a, _, _) -> a) <$> runFP initR initS fp

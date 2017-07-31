@@ -2,7 +2,7 @@
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
 module FP15.Evaluator.RuntimeError where
-import Control.Monad.Error
+import Control.Monad.Except
 import Text.PrettyPrint
 import FP15.Disp
 import FP15.Name
@@ -29,9 +29,9 @@ data RuntimeError = ContractViolation { contractViolated :: String
                   | EnvAccessError { offendingIndex :: Int
                                    , stackTrace :: StackTrace }
 
-instance Error RuntimeError where
-  strMsg s = ErrorMessage s emptyStackTrace
-  noMsg = ErrorMessage "Runtime error." emptyStackTrace
+--instance Except RuntimeError where
+  --strMsg s = ErrorMessage s emptyStackTrace
+  --noMsg = ErrorMessage "Runtime error." emptyStackTrace
 
 instance Disp StackTrace where
   pretty (StackTrace st) =

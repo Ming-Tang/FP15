@@ -3,9 +3,9 @@
 module Main where
 import Control.DeepSeq(force)
 import Control.Applicative((<$>))
-import Control.Monad.Error()
+import Control.Monad.Except()
 import Data.Map((!))
-import Text.PrettyPrint()
+import Text.PrettyPrint
 import FP15.Parsing()
 import FP15.Parsing.Types
 import FP15.Parsing.Lexer(scanTokens)
@@ -18,36 +18,15 @@ import FP15.Evaluator.Contract()
 import FP15.Compiler
 import FP15.Compiler.Types
 import FP15.Compiler.CompiledModuleSet
+import FP15.Compiler.PrettyPrinting
 import FP15.Standard(standardCMS)
 import FP15.Evaluator.Standard(standardEnv)
 import FP15.Evaluator.Translation(transMap)
 import FP15.Evaluator.FP(execFP)
 
 main :: IO ()
-{-
-import Data.Map((!))
-import FP15.Evaluator.Standard(standardEnv)
-import FP15.Evaluator.Translation(BaseExpr(..), transMap)
-
-interactLines :: (String -> String) -> IO ()
-interactLines l = interact (unlines . map l . lines)
-
-valueOrError (Left e) = error e
-valueOrError (Right x) = x
-
-printTokens :: String -> IO ()
-printTokens = putStrLn . unlines . map show . valueOrError . scanTokens
-
-compile :: String -> IO ()
-compile s = moduleResolution resolve [ModuleName ["Main"]] >>= print
-  where resolve (ModuleName ["Main"]) = return $ Just (ModuleSource Nothing s)
-        resolve m = pathResolver ["."] m
-
-main = getContents >>= compile
--}
 
 main = do
-  -- XXX should break the whole compilation procedure down into subroutines
   src <- getContents
   let ast = unwrap $ parse $ ModuleSource Nothing src
   let m = unwrap $ stageModule standardCMS ast
@@ -55,7 +34,8 @@ main = do
   let c = force $ makeCompiledModule m'
   let cms' = force $ addModule (ssMN $ rmsSS m') c standardCMS
   let (CompiledModuleSet cmis) = force cms'
-  -- print $ vcat $ prettyCMILines (M ["Main"]) (cmis ! (M ["Main"]))
+  --print $ vcat $ prettyCMILines (M ["Main"]) (cmis ! (M ["Main"]))
+  --print $ (cmis ! (M ["Main"]))
   let fl = unwrap $ translateCMS cms'
   let s = force $ transMap standardEnv fl
   res <- fmap unwrap $ execFP $ (s ! "Main.main") (Extended $ RealWorld RW)

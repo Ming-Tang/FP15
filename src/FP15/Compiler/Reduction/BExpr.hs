@@ -7,7 +7,7 @@ module FP15.Compiler.Reduction.BExpr where
 import Text.PrettyPrint
 import Data.Maybe(isJust)
 import Data.List.Split
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.Trans.Reader
 import Control.Applicative hiding (Const)
 import FP15.Value

@@ -5,7 +5,7 @@ module FP15.Compiler.Reduction.Resolution (
 , synProvider
 ) where
 import Text.PrettyPrint
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.Trans.Reader
 import Control.Applicative((<$>), (<*>))
 import FP15.Types

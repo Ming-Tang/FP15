@@ -3,7 +3,7 @@
 
 module FP15.Parsing.Parser (parse) where
 import qualified Data.Map.Strict as M
-import Control.Monad.Error
+import Control.Monad.Except
 import Data.Map.Strict(Map)
 import Data.Maybe
 import Data.List.Split

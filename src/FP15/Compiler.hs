@@ -7,7 +7,7 @@ module FP15.Compiler where
 import Text.PrettyPrint
 import Data.List(intercalate)
 import Data.Either
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Applicative
 import qualified Data.Map.Strict as M
 import Data.Maybe(mapMaybe)

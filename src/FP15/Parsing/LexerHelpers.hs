@@ -1,6 +1,6 @@
 module FP15.Parsing.LexerHelpers where
 import Control.Monad(mplus)
-import Control.Monad.Error(throwError)
+import Control.Monad.Except(throwError)
 import Data.Char(isDigit)
 import Data.List.Split
 import FP15.Types(Name(..), Map)

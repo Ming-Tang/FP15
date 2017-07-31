@@ -2,7 +2,7 @@
 module FP15.Evaluator.Translation where
 import Prelude hiding (lookup)
 import Control.Monad
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.DeepSeq
 import Data.Maybe(fromMaybe)
 import Data.Map(Map, lookup)
