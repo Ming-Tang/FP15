@@ -3,30 +3,24 @@ import os
 import os.path as path
 from fp15 import run_fp15
 
-# TODO integrate with REPL, refactor REPL into a class
 
-def parse_test_case(contents):
+def parse_test_case(lines):
     code, out = [], []
     state = 0
-    for line in contents.splitlines():
-        if state == 0 and line.startswith(">>> "):
-            if len(code):
-                yield "\n".join(code), "\n".join(out)
+    indices = [i for i, line in enumerate(lines) if line.startswith(">>> ")]
+    if indices and indices[0] != 0:
+        raise Exception("First line must be a >>> ")
 
-            code, out = [], []
-            state = 1
-            code.append(line[4:])
-        elif state == 1 and line.startswith("... "):
-            code.append(line[4:])
-        elif state == 1:
-            state = 0
-            out.append(line)
-        else:
-            raise Exception(
-                "Invalid file format. {!r}".format(
-                    dict(line=line, code=code, out=out,
-                         state=state, contents=contents)))
+    join = '\n'.join
+    for i, index in enumerate(indices):
+        mid_index = index
+        while mid_index + 1 < len(lines) and lines[mid_index + 1].startswith('... '):
+            mid_index += 1
 
+        next_index = indices[i + 1] if i + 1 < len(indices) else len(lines)
+        code = join(line[4:] for line in lines[index : mid_index + 1])
+        out = join(lines[mid_index + 1 : next_index])
+        yield (code, out)
 
 test_case_path = path.join(path.dirname(path.realpath(__file__)),
                            './test-cases')
@@ -37,10 +31,11 @@ files = [f for f in os.listdir(test_case_path) if f.endswith(".txt")]
 for filename in files:
     print "--- {} ---".format(filename)
     f = path.join(test_case_path, filename)
-
-    for code, expected_out in parse_test_case(''.join(open(f, 'r'))):
+    lines = []
+    with open(f, 'r') as f: lines = [line.strip() for line in f.readlines()]
+    for code, expected_out in parse_test_case(lines):
         out, err = run_fp15("main = {}".format(code), redirect=True)
-        print ">>> {}".format(code)
+        print ">>> {}".format(code.replace('\n', '\n... '))
         print "{}".format(expected_out)
         expected_out += "\n"
 
