@@ -79,6 +79,11 @@ trans e (With f e1) = body where
     y <- f' x
     withEnv (push y) $ e1' x
 
+trans e (Pop f) = body where
+  f' = force $ trans e f
+  body !(force -> x) = do
+    withEnv pop $ f' x
+
 trans e (Mark k x) = markFunc (noLoc k) . trans e x
 
 -- Evaluation helper functions

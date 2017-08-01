@@ -125,6 +125,7 @@ toBE (TOperator lo@(Loc l o)) = do
   return $ Func $ Loc l $ AN f
 toBE (TDotOperator f) = return $ Func $ lrn f
 
+toBE (TPop e) = Pop <$> toBE e
 toBE (TWith e) = With pId <$> toBE e
 toBE (TWithLeft e) = mkWith "s0" "s1" e
 toBE (TWithRight e) = mkWith "s1" "s0" e

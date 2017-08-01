@@ -35,6 +35,7 @@ eof { Token EOF _ _ }
 "#=" { Token With _ _ }
 "#<" { Token WithLeft _ _ }
 "#>" { Token WithRight _ _ }
+"#-" { Token FP15.Parsing.Types.Pop _ _ }
 "=" { (viewOperatorS "=" -> Just $$) }
 
 get { Token (Get $$) _ _ }
@@ -111,6 +112,7 @@ primary : function { TFunc $1 }
         | "#=" primary { TWith $2 }
         | "#<" primary { TWithLeft $2 }
         | "#>" primary { TWithRight $2 }
+        | "#-" primary { TPop $2 }
 
         | "#:" "[" binding_list "]" primary { TLet $3 $5 }
         | "(" f_infix_body ")" { parseFInfix $2 }

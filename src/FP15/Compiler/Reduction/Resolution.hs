@@ -30,6 +30,7 @@ resolve :: Lookup e => BExpr -> RResult e Expr
 resolve (Const x) = return $ Const x
 resolve (App f xs) = App <$> loFl f <*> mapM resolve xs
 resolve (Func f) = Func <$> loF f
+resolve (Pop e) = Pop <$> resolve e
 resolve (Get i) = return $ Get i -- TODO validate?
 resolve (With x e) = With <$> resolve x <*> resolve e
 resolve (Ex _) = error "resolve: Ex"

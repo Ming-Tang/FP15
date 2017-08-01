@@ -33,6 +33,7 @@ data BaseExpr = Const Value
               | Mark Ident BaseExpr
               | Get Int
               | With BaseExpr BaseExpr
+              | Pop BaseExpr
               deriving (Eq, Show, Read, Generic)
 
 instance NFData BaseExpr where rnf x = seq x ()

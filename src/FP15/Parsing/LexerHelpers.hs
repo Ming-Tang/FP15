@@ -186,8 +186,8 @@ readHash "#f" = return FalseLiteral
 readHash "#T" = return TrueLiteral
 readHash "#F" = return FalseLiteral
 readHash s0@('#':s@(_:_)) | all isDigit s = return $ Indexer (read s)
-                          | otherwise = illegalToken "Invalid #form."
-readHash s0 = illegalToken "Invalid #form."
+                          | otherwise = illegalToken ("Invalid #form: " ++ s0)
+readHash s0 = illegalToken ("Invalid #form: " ++ s0)
 
 -- | The 'getIndentChange' function gets the change in indentation given
 -- whitespaces, which might or might not contain line breaks. If no line breaks,

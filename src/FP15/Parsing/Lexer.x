@@ -77,6 +77,7 @@ tokens :-
   \#\= { single With }
   \#\< { single WithLeft }
   \#\> { single WithRight }
+  \#\- { single Pop }
   \#\: { single Let }
   @get { act readGet }
 
@@ -96,7 +97,7 @@ tokens :-
   \; { single Semicolon }
   \$ { single Dollar }
   \' { single Quote }
-  . { single $ Illegal "Unexpected character." }
+  --. { single $ Illegal "Unexpected character." }
 
 {
 

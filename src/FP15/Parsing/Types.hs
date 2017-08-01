@@ -40,6 +40,7 @@ data TokenData
   | Quote    -- '
   | Let      -- #:
   | With     -- #=
+  | Pop      -- #-
   | Get !Int -- #^ #^^ #^4
   | WithLeft -- #<
   | WithRight -- #>

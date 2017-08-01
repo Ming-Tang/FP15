@@ -18,6 +18,7 @@ data XExpr f fl x = Const Value
                   | Func f
                   | Get Int
                   | With (XExpr f fl x) (XExpr f fl x)
+                  | Pop (XExpr f fl x)
                   | Ex !x
 
 deriving instance (Eq x, Eq f, Eq fl) => Eq (XExpr f fl x)
@@ -56,6 +57,7 @@ data ExprAST = TValue Value
              | TIndex Int
              | TId
 
+             | TPop ExprAST
              | TWith ExprAST
              | TWithLeft ExprAST
              | TWithRight ExprAST
@@ -90,6 +92,7 @@ instance Disp ExprAST where
   pretty (TWith e) = text "#=" <+> lbrace <> pretty e <> rbrace
   pretty (TWithLeft e) = text "#<" <+> lbrace <> pretty e <> rbrace
   pretty (TWithRight e) = text "#>" <+> lbrace <> pretty e <> rbrace
+  pretty (TPop e) = text "#-" <+> lbrace <> pretty e <> rbrace
 
   pretty (TGet 0) = text "#^"
   pretty (TGet 1) = text "#^^"
